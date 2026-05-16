@@ -2,157 +2,149 @@
 
 > **"Most blockchains process transactions instantly. We process workflows."**
 
-Built on Rialo Testnet. Demonstrates native async execution for real-world financial workflows.
+Built on Rialo Testnet (Goerli/Sepolia). Demonstrates native async execution for real-world financial workflows.
 
 ---
 
-## What Is Syncred?
+## Features
 
-Syncred is a decentralized lending + payment workflow system where transactions can:
+- **Wallet Connect** — MetaMask, Rabby, Coinbase, WalletConnect supported via RainbowKit
+- **Goerli Testnet** — Auto network detection + one-click switch
+- **Async Loan Workflows** — PENDING → VERIFYING → COMPLETED lifecycle onchain
+- **Real Contract Calls** — requestLoan, approveWorkflow, cancelWorkflow, depositFunds
+- **Credit Profile** — Onchain credit score derived from wallet history
+- **Admin Panel** — Owner-gated approve/reject with real Solidity calls
+- **Live Analytics** — Real data from smart contract state
+- **Toast Notifications** — Transaction status, confirmations, errors
+- **Wrong Network Guard** — Banner + auto-switch to Goerli
 
-1. **Start** onchain
-2. **Pause** while waiting for external verification
-3. **Resume** automatically after verification passes
-4. **Complete** settlement without any manual admin interaction
+---
 
-This demonstrates how Rialo-style async execution enables real-world finance on blockchain.
+## Quick Start
+
+### 1. Deploy Contract (Goerli)
+
+```bash
+cd contracts
+npm install
+cp .env.example .env
+# Fill: GOERLI_RPC_URL, PRIVATE_KEY, ETHERSCAN_API_KEY
+npm run deploy:goerli
+```
+
+Copy the deployed contract address.
+
+### 2. Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local
+# Set:
+# NEXT_PUBLIC_WC_PROJECT_ID=... (from cloud.walletconnect.com)
+# NEXT_PUBLIC_CONTRACT_ADDRESS=0x... (from step 1)
+npm run dev
+```
+
+### 3. Backend (Mock Verification APIs)
+
+```bash
+cd backend
+npm install
+npm run dev  # runs on localhost:4000
+```
 
 ---
 
 ## Architecture
 
 ```
-User → requestLoan() → Contract (PENDING)
-         ↓
-    Backend detects event
-         ↓
-    KYC + Credit + Wallet Analysis
-         ↓
-    approveWorkflow() / rejectWorkflow()
-         ↓
-    Contract auto-releases funds (COMPLETED)
+User connects MetaMask (Goerli)
+        ↓
+requestLoan() → Contract state: PENDING
+        ↓
+Backend /api/workflow/verify
+  → KYC check (mock)
+  → Credit score check
+  → Wallet analysis
+        ↓
+approveWorkflow() or rejectWorkflow()
+        ↓
+State: COMPLETED — ETH auto-disbursed to user
 ```
 
 ---
 
-## Project Structure
+## Environment Variables
 
-```
-Rialo-Syncred/
-├── contracts/     # Solidity smart contracts (Hardhat)
-├── frontend/      # Next.js + Tailwind + Framer Motion
-├── backend/       # Node.js mock verification service
-└── docs/          # Documentation
-```
+### Frontend (`frontend/.env.local`)
 
----
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_WC_PROJECT_ID` | WalletConnect project ID from cloud.walletconnect.com |
+| `NEXT_PUBLIC_CONTRACT_ADDRESS` | Deployed AsyncLending contract address |
+| `NEXT_PUBLIC_GOERLI_RPC` | Custom Goerli RPC (optional, default: Ankr) |
+| `NEXT_PUBLIC_SEPOLIA_RPC` | Custom Sepolia RPC (optional) |
 
-## Quick Start
+### Contracts (`contracts/.env`)
 
-### Smart Contracts
-
-```bash
-cd contracts
-npm install
-npm run compile
-npm run test
-npm run deploy:local    # local Hardhat network
-npm run deploy:goerli   # Goerli testnet
-```
-
-Copy `.env.example` → `.env` and fill in your keys.
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Opens at `http://localhost:3000`
-
-### Backend
-
-```bash
-cd backend
-npm install
-npm run dev
-```
-
-Runs on `http://localhost:4000`
+| Variable | Description |
+|---|---|
+| `GOERLI_RPC_URL` | Goerli RPC endpoint (Infura/Alchemy/Ankr) |
+| `PRIVATE_KEY` | Deployer wallet private key |
+| `ETHERSCAN_API_KEY` | For contract verification |
 
 ---
 
 ## Smart Contract
 
-**AsyncLending.sol** — Core workflow contract
+**AsyncLending.sol** — Goerli deployed
 
-| Function | Description |
+| Function | Who | Description |
+|---|---|---|
+| `requestLoan(amount)` | User | Create loan request |
+| `requestPaymentVerification(amount)` | User | Create payment verification |
+| `cancelWorkflow(id)` | User (owner) | Cancel PENDING request |
+| `startVerification(id)` | Verifier | Move to VERIFYING |
+| `approveWorkflow(id)` | Verifier | Approve + auto-disburse funds |
+| `rejectWorkflow(id, reason)` | Verifier | Reject with reason |
+| `depositFunds()` | Owner | Fund the loan pool |
+| `getAllWorkflows()` | Anyone | Read all workflows |
+
+---
+
+## Pages
+
+| Page | Description |
 |---|---|
-| `requestLoan(amount)` | Create loan request (PENDING) |
-| `requestPaymentVerification(amount)` | Create payment verification |
-| `startVerification(id)` | Move to VERIFYING state |
-| `approveWorkflow(id)` | Approve + auto-disburse |
-| `rejectWorkflow(id, reason)` | Reject with reason |
-| `cancelWorkflow(id)` | User cancels PENDING request |
-| `getAllWorkflows()` | Fetch all workflow data |
-
-**Workflow States:**
-```
-PENDING → VERIFYING → APPROVED → COMPLETED
-                   ↘ REJECTED
-```
+| `/` | Landing — connect CTA, async flow explanation |
+| `/dashboard` | Request loans, track workflows, cancel pending |
+| `/profile` | Credit score, wallet stats, loan history |
+| `/admin` | Owner-only: approve/reject, fund pool |
+| `/analytics` | Live charts from contract state |
 
 ---
 
-## Frontend Pages
+## Deployment (Vercel)
 
-| Page | Route | Description |
-|---|---|---|
-| Landing | `/` | Protocol overview + async flow explanation |
-| Dashboard | `/dashboard` | Live workflow tracking + loan requests |
-| Admin | `/admin` | Simulate verification events |
-| Analytics | `/analytics` | Charts: volume, approval rate, settlement time |
-
----
-
-## Backend API
-
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/kyc/verify` | POST | Mock KYC verification |
-| `/api/kyc/status/:address` | GET | KYC status lookup |
-| `/api/credit/score/:address` | GET | Credit score (300-1000) |
-| `/api/workflow/verify` | POST | Full async verification pipeline |
-| `/api/workflow/logs` | GET | Recent verification logs |
-| `/api/health` | GET | Service health check |
-
----
-
-## Demo Flow
-
-1. Open Dashboard → enter loan amount → click **Request Loan**
-2. Watch workflow appear as **PENDING**
-3. Status auto-transitions to **VERIFYING**
-4. Backend runs KYC + credit check + wallet analysis
-5. Workflow resolves to **COMPLETED** (funds released) or **REJECTED**
-6. Check Analytics for performance metrics
+Vercel auto-detects multi-service via `vercel.json`. After deploy:
+1. Add environment variables in Vercel dashboard
+2. Frontend live at `/`
+3. Backend API at `/_/backend/api/...`
 
 ---
 
 ## Tech Stack
 
-- **Smart Contracts:** Solidity 0.8.20 + Hardhat
-- **Frontend:** Next.js 14 + TypeScript + TailwindCSS + Framer Motion + Recharts
-- **Backend:** Node.js + Express
-- **Network:** Goerli / Sepolia Testnet
-
----
-
-## License
-
-MIT
+| Layer | Tech |
+|---|---|
+| Smart Contracts | Solidity 0.8.20 + Hardhat |
+| Frontend | Next.js 14 + TypeScript + TailwindCSS |
+| Wallet | wagmi v2 + viem + RainbowKit |
+| Animations | Framer Motion |
+| Charts | Recharts |
+| Notifications | react-hot-toast |
+| Backend | Node.js + Express |
 
 ---
 

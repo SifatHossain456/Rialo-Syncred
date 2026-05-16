@@ -1,48 +1,48 @@
 "use client";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { ArrowRight, Zap, Shield, Clock, TrendingUp, ChevronRight } from "lucide-react";
+import { ArrowRight, Zap, Shield, Clock, TrendingUp, ChevronRight, Wallet } from "lucide-react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount } from "wagmi";
 
 const features = [
   {
     icon: <Clock className="w-6 h-6" />,
     title: "Async Execution",
     desc: "Transactions pause and resume automatically based on real-world verification events.",
-    color: "text-neon-cyan",
-    glow: "glow-cyan",
+    color: "text-neon-cyan", glow: "glow-cyan",
   },
   {
     icon: <Shield className="w-6 h-6" />,
     title: "Compliance Layer",
     desc: "KYC, credit scoring, and wallet analysis run automatically before any loan is issued.",
-    color: "text-neon-purple",
-    glow: "glow-purple",
+    color: "text-neon-purple", glow: "glow-purple",
   },
   {
     icon: <Zap className="w-6 h-6" />,
     title: "Auto Settlement",
     desc: "Once verified, funds are released without any manual admin interaction required.",
-    color: "text-neon-green",
-    glow: "glow-green",
+    color: "text-neon-green", glow: "glow-green",
   },
   {
     icon: <TrendingUp className="w-6 h-6" />,
     title: "Real-time Dashboard",
     desc: "Live workflow tracking with state transitions, verification logs, and analytics.",
-    color: "text-yellow-400",
-    glow: "",
+    color: "text-yellow-400", glow: "",
   },
 ];
 
 const steps = [
-  { num: "01", title: "Request Loan", desc: "User submits loan request onchain", color: "#00f5ff" },
-  { num: "02", title: "Workflow Paused", desc: "Contract enters PENDING state", color: "#a855f7" },
-  { num: "03", title: "Verification", desc: "KYC + credit check runs automatically", color: "#fbbf24" },
-  { num: "04", title: "Auto Resume", desc: "Backend triggers contract execution", color: "#00ff87" },
-  { num: "05", title: "Funds Released", desc: "Settlement completes, no admin needed", color: "#ff006e" },
+  { num: "01", title: "Connect Wallet", desc: "Connect MetaMask on Goerli Testnet", color: "#00f5ff" },
+  { num: "02", title: "Request Loan", desc: "Submit onchain loan request — enters PENDING", color: "#a855f7" },
+  { num: "03", title: "Auto Verification", desc: "KYC + credit check runs automatically", color: "#fbbf24" },
+  { num: "04", title: "Auto Resume", desc: "Contract executes after verification passes", color: "#00ff87" },
+  { num: "05", title: "Funds Released", desc: "Settlement completes. No admin needed.", color: "#ff006e" },
 ];
 
 export default function LandingPage() {
+  const { isConnected } = useAccount();
+
   return (
     <div className="min-h-screen bg-dark-900 grid-bg">
       {/* Hero */}
@@ -60,7 +60,7 @@ export default function LandingPage() {
         >
           <div className="inline-flex items-center gap-2 bg-neon-cyan/10 border border-neon-cyan/20 rounded-full px-4 py-1.5 mb-8">
             <span className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse" />
-            <span className="text-neon-cyan text-sm font-mono">Rialo Testnet — Live</span>
+            <span className="text-neon-cyan text-sm font-mono">Rialo Testnet — Live on Goerli</span>
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 leading-tight">
@@ -78,16 +78,23 @@ export default function LandingPage() {
             protocol that waits for real-world verification before completing settlement.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/dashboard">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                className="flex items-center gap-2 bg-neon-cyan text-dark-900 font-bold px-8 py-4 rounded-xl glow-cyan hover:bg-cyan-300 transition-all"
-              >
-                Open Dashboard <ArrowRight className="w-5 h-5" />
-              </motion.button>
-            </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            {isConnected ? (
+              <Link href="/dashboard">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center gap-2 bg-neon-cyan text-dark-900 font-bold px-8 py-4 rounded-xl glow-cyan hover:bg-cyan-300 transition-all"
+                >
+                  Open Dashboard <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </Link>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <ConnectButton label="Connect & Get Started" />
+                <p className="text-slate-600 text-xs">Goerli or Sepolia Testnet</p>
+              </div>
+            )}
             <Link href="/analytics">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -136,7 +143,6 @@ export default function LandingPage() {
             A new paradigm for onchain finance — transaction states that mirror real-world processes.
           </p>
         </motion.div>
-
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((f, i) => (
             <motion.div
@@ -167,34 +173,28 @@ export default function LandingPage() {
           >
             Async Execution Flow
           </motion.h2>
-
-          <div className="relative">
-            {/* Timeline line */}
-            <div className="absolute left-8 top-0 bottom-0 w-px bg-gradient-to-b from-neon-cyan/50 via-neon-purple/50 to-neon-green/50 hidden md:block" />
-
-            <div className="space-y-8">
-              {steps.map((step, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.15 }}
-                  className="flex gap-6 items-start md:ml-0"
+          <div className="space-y-6">
+            {steps.map((step, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.12 }}
+                className="flex gap-5 items-center"
+              >
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center font-mono font-bold text-sm flex-shrink-0 border"
+                  style={{ background: `${step.color}15`, borderColor: `${step.color}44`, color: step.color }}
                 >
-                  <div
-                    className="w-16 h-16 rounded-2xl flex items-center justify-center font-mono font-bold text-sm flex-shrink-0 border"
-                    style={{ background: `${step.color}15`, borderColor: `${step.color}44`, color: step.color }}
-                  >
-                    {step.num}
-                  </div>
-                  <div className="bg-dark-700 border border-slate-800 rounded-2xl p-6 flex-1">
-                    <h3 className="text-white font-semibold text-lg">{step.title}</h3>
-                    <p className="text-slate-400 mt-1">{step.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  {step.num}
+                </div>
+                <div className="bg-dark-700 border border-slate-800 rounded-2xl p-5 flex-1">
+                  <h3 className="text-white font-semibold">{step.title}</h3>
+                  <p className="text-slate-400 text-sm mt-0.5">{step.desc}</p>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -207,17 +207,26 @@ export default function LandingPage() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto bg-gradient-to-br from-dark-700 to-dark-800 border border-neon-cyan/20 rounded-3xl p-12 glow-cyan"
         >
+          <Wallet className="w-10 h-10 text-neon-cyan mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-white mb-4">Ready to experience async finance?</h2>
-          <p className="text-slate-400 mb-8">Request a loan and watch the verification workflow execute in real time.</p>
-          <Link href="/dashboard">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.97 }}
-              className="bg-neon-cyan text-dark-900 font-bold px-10 py-4 rounded-xl glow-cyan hover:bg-cyan-300 transition-all"
-            >
-              Launch App
-            </motion.button>
-          </Link>
+          <p className="text-slate-400 mb-8">
+            Connect your wallet on Goerli Testnet and request a loan — watch the verification workflow execute live.
+          </p>
+          {isConnected ? (
+            <Link href="/dashboard">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.97 }}
+                className="bg-neon-cyan text-dark-900 font-bold px-10 py-4 rounded-xl glow-cyan hover:bg-cyan-300 transition-all"
+              >
+                Launch Dashboard
+              </motion.button>
+            </Link>
+          ) : (
+            <div className="flex justify-center">
+              <ConnectButton label="Connect Wallet to Start" />
+            </div>
+          )}
         </motion.div>
       </section>
 
