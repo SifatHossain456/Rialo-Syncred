@@ -75,7 +75,9 @@ export default function Dashboard() {
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
   const [cancelTxHash, setCancelTxHash] = useState<`0x${string}` | undefined>();
-  const [demoWorkflows, setDemoWorkflows] = useState<Workflow[]>(IS_DEMO ? MOCK_WORKFLOWS : []);
+  const [demoWorkflows, setDemoWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
+  const [useFallback, setUseFallback] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(!IS_DEMO);
   const prevCompletedRef = useRef(0);
 
   /* ── chain reads ─────────────────────────────────── */
@@ -89,8 +91,25 @@ export default function Dashboard() {
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getContractBalance",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: !IS_DEMO && isCorrectNetwork && !useFallback },
   });
+
+  /* ── load timeout: after 4s with no data, use demo fallback ── */
+  useEffect(() => {
+    if (IS_DEMO) return;
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+      if (!chainWorkflows) setUseFallback(true);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (chainWorkflows) {
+      setInitialLoading(false);
+      setUseFallback(false);
+    }
+  }, [chainWorkflows]);
 
   /* ── write ───────────────────────────────────────── */
   const { writeContractAsync, isPending: isSending } = useWriteContract();
@@ -99,9 +118,9 @@ export default function Dashboard() {
 
   /* ── refresh ─────────────────────────────────────── */
   const doRefresh = useCallback(async () => {
-    if (!IS_DEMO) await refetch();
+    if (!IS_DEMO && !useFallback) await refetch();
     setLastRefreshed(new Date());
-  }, [refetch]);
+  }, [refetch, useFallback]);
   useAutoRefresh(doRefresh, 15000, autoRefresh && isConnected);
 
   /* ── tx effects ──────────────────────────────────── */
@@ -113,7 +132,8 @@ export default function Dashboard() {
   }, [isCancelConfirmed, refetch]);
 
   /* ── merge real + demo data ──────────────────────── */
-  const workflows: Workflow[] = IS_DEMO
+  const isEffectivelyDemo = IS_DEMO || useFallback;
+  const workflows: Workflow[] = isEffectivelyDemo
     ? demoWorkflows
     : (chainWorkflows as Workflow[] | undefined) ?? [];
 
@@ -125,7 +145,7 @@ export default function Dashboard() {
   }, [workflows]);
 
   /* ── stats ───────────────────────────────────────── */
-  const pool = IS_DEMO
+  const pool = isEffectivelyDemo
     ? parseFloat(formatEther(MOCK_POOL_BALANCE))
     : poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : 0;
 
@@ -155,7 +175,7 @@ export default function Dashboard() {
   /* ── demo request ────────────────────────────────── */
   function handleDemoRequest() {
     if (!amount || parseFloat(amount) <= 0) return toast.error("Enter a valid amount");
-    const { parseEther: pe } = require("viem");
+    const pe = parseEther;
     const now = BigInt(Math.floor(Date.now() / 1000));
     const newId = BigInt(demoWorkflows.length + 1);
     const newWf: Workflow = {
@@ -208,7 +228,7 @@ export default function Dashboard() {
 
   async function handleCancel(id: bigint, e: React.MouseEvent) {
     e.stopPropagation();
-    if (IS_DEMO) {
+    if (isEffectivelyDemo) {
       setDemoWorkflows((p) => p.map((w) => w.id === id ? { ...w, state: 5 as const } : w));
       return toast.success("Demo cancelled");
     }
@@ -222,8 +242,8 @@ export default function Dashboard() {
     }
   }
 
-  const handleRequest = IS_DEMO ? handleDemoRequest : handleRealRequest;
-  const showLoading = !IS_DEMO && isLoading && !workflows.length;
+  const handleRequest = isEffectivelyDemo ? handleDemoRequest : handleRealRequest;
+  const showLoading = initialLoading;
 
   /* ── not connected screen ────────────────────────── */
   if (!isConnected && !IS_DEMO) {
@@ -265,16 +285,24 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
-        {/* Demo mode banner */}
-        {IS_DEMO && (
+        {/* Demo / fallback banner */}
+        {isEffectivelyDemo && (
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
             className="mt-6 flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-5 py-3">
             <FlaskConical className="w-4 h-4 text-violet-400 flex-shrink-0" />
             <p className="text-violet-300 text-sm">
-              <span className="font-semibold">Demo Mode</span>
-              <span className="text-violet-400"> — No contract deployed. Showing mock data. Set </span>
-              <code className="font-mono text-violet-200 bg-violet-900/40 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code>
-              <span className="text-violet-400"> to connect to Goerli.</span>
+              <span className="font-semibold">{useFallback ? "Preview Mode" : "Demo Mode"}</span>
+              <span className="text-violet-400">
+                {useFallback
+                  ? " — Connected but no contract found on this network. Showing sample data."
+                  : " — No contract deployed. Showing mock data. Set "}
+              </span>
+              {!useFallback && (
+                <>
+                  <code className="font-mono text-violet-200 bg-violet-900/40 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code>
+                  <span className="text-violet-400"> to go live.</span>
+                </>
+              )}
             </p>
           </motion.div>
         )}
