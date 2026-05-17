@@ -4,23 +4,15 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { TrendingUp, Activity, Clock, CheckCircle, DollarSign, Loader2 } from "lucide-react";
+import { TrendingUp, Activity, Clock, CheckCircle, DollarSign } from "lucide-react";
 import { useAccount, useReadContract, useChainId } from "wagmi";
 import { formatEther } from "viem";
-import { ABI, CONTRACT_ADDRESS, STATE_MAP } from "@/lib/contract";
+import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
+import { MOCK_WORKFLOWS, isDemoMode, type Workflow } from "@/lib/mockData";
+import CountUp from "@/components/CountUp";
 
-type WFState = 0 | 1 | 2 | 3 | 4 | 5;
-interface Workflow {
-  id: bigint;
-  user: string;
-  amount: bigint;
-  state: WFState;
-  createdAt: bigint;
-  updatedAt: bigint;
-  rejectReason: string;
-  isLoan: boolean;
-}
+const IS_DEMO = isDemoMode();
 
 const volumeData = [
   { day: "Mon", loans: 1.8, payments: 0.6 },
@@ -29,34 +21,25 @@ const volumeData = [
   { day: "Thu", loans: 4.8, payments: 1.4 },
   { day: "Fri", loans: 4.1, payments: 1.7 },
   { day: "Sat", loans: 6.4, payments: 1.9 },
-  { day: "Sun", loans: 5.2, payments: 1.9 },
+  { day: "Sun", loans: 5.2, payments: 2.1 },
 ];
 
 const settlementData = [
-  { time: "00:00", avg: 1.8 },
-  { time: "04:00", avg: 1.2 },
-  { time: "08:00", avg: 2.4 },
-  { time: "12:00", avg: 3.1 },
-  { time: "16:00", avg: 2.8 },
-  { time: "20:00", avg: 2.2 },
-  { time: "Now", avg: 1.9 },
+  { time: "00:00", avg: 1.8 }, { time: "04:00", avg: 1.2 },
+  { time: "08:00", avg: 2.4 }, { time: "12:00", avg: 3.1 },
+  { time: "16:00", avg: 2.8 }, { time: "20:00", avg: 2.2 }, { time: "Now", avg: 1.9 },
 ];
 
 const tooltipStyle = {
-  backgroundColor: "#161b27",
-  border: "1px solid #1e2535",
-  borderRadius: "12px",
-  color: "#e2e8f0",
-  fontSize: "12px",
+  backgroundColor: "#0d1117", border: "1px solid #1e2535",
+  borderRadius: "12px", color: "#e2e8f0", fontSize: "12px", padding: "10px 14px",
 };
 
 const STATE_COLORS_PIE: Record<number, string> = {
-  0: "#fbbf24",
-  1: "#60a5fa",
-  2: "#00ff87",
-  3: "#ff006e",
-  4: "#a855f7",
-  5: "#475569",
+  0: "#fbbf24", 1: "#60a5fa", 2: "#34d399", 3: "#f43f5e", 4: "#a78bfa", 5: "#475569",
+};
+const STATE_NAMES: Record<number, string> = {
+  0:"Pending", 1:"Verifying", 2:"Approved", 3:"Rejected", 4:"Completed", 5:"Cancelled"
 };
 
 export default function Analytics() {
@@ -64,147 +47,136 @@ export default function Analytics() {
   const chainId = useChainId();
   const isCorrectNetwork = SUPPORTED_CHAINS.some((c) => c.id === chainId);
 
-  const { data: allWorkflows, isLoading } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: ABI,
-    functionName: "getAllWorkflows",
-    query: { enabled: isConnected && isCorrectNetwork },
+  const { data: allWorkflows } = useReadContract({
+    address: CONTRACT_ADDRESS, abi: ABI, functionName: "getAllWorkflows",
+    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
   });
-
   const { data: poolBalance } = useReadContract({
-    address: CONTRACT_ADDRESS,
-    abi: ABI,
-    functionName: "getContractBalance",
-    query: { enabled: isConnected && isCorrectNetwork },
+    address: CONTRACT_ADDRESS, abi: ABI, functionName: "getContractBalance",
+    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
   });
 
-  const workflows = (allWorkflows as Workflow[] | undefined) ?? [];
+  const workflows: Workflow[] = IS_DEMO
+    ? MOCK_WORKFLOWS
+    : (allWorkflows as Workflow[] | undefined) ?? [];
 
-  // Compute real stats from chain data
-  const totalVolume = workflows.reduce((acc, w) => acc + parseFloat(formatEther(w.amount)), 0);
-  const completed = workflows.filter((w) => w.state === 4).length;
-  const rejected = workflows.filter((w) => w.state === 3).length;
-  const approvalRate = workflows.length > 0 ? Math.round((completed / workflows.length) * 100) : 0;
+  const totalVolume = workflows.reduce((a, w) => a + parseFloat(formatEther(w.amount)), 0);
+  const completed   = workflows.filter((w) => w.state === 4).length;
+  const rejected    = workflows.filter((w) => w.state === 3).length;
+  const approvalRate= workflows.length > 0 ? Math.round((completed / workflows.length) * 100) : 0;
 
-  // State distribution for pie chart
   const stateCounts = workflows.reduce((acc, w) => {
-    acc[w.state] = (acc[w.state] || 0) + 1;
-    return acc;
+    acc[w.state] = (acc[w.state] || 0) + 1; return acc;
   }, {} as Record<number, number>);
 
   const pieData = Object.entries(stateCounts).map(([state, count]) => ({
-    name: STATE_MAP[parseInt(state)],
+    name: STATE_NAMES[parseInt(state)] ?? "Unknown",
     value: count,
-    color: STATE_COLORS_PIE[parseInt(state)],
+    color: STATE_COLORS_PIE[parseInt(state)] ?? "#475569",
   }));
 
-  // Workflow bar by day (mock structure, real count)
-  const workflowData = [
-    { day: "Mon", completed: Math.floor(completed * 0.1), rejected: Math.floor(rejected * 0.1) },
-    { day: "Tue", completed: Math.floor(completed * 0.15), rejected: Math.floor(rejected * 0.15) },
-    { day: "Wed", completed: Math.floor(completed * 0.12), rejected: Math.floor(rejected * 0.12) },
-    { day: "Thu", completed: Math.floor(completed * 0.2), rejected: Math.floor(rejected * 0.2) },
-    { day: "Fri", completed: Math.floor(completed * 0.18), rejected: Math.floor(rejected * 0.18) },
-    { day: "Sat", completed: Math.floor(completed * 0.14), rejected: Math.floor(rejected * 0.14) },
-    { day: "Sun", completed: Math.floor(completed * 0.11), rejected: Math.floor(rejected * 0.11) },
+  const workflowBar = [
+    { day: "Mon", completed: Math.max(1, Math.floor(completed * 0.10)), rejected: Math.max(0, Math.floor(rejected * 0.10)) },
+    { day: "Tue", completed: Math.max(1, Math.floor(completed * 0.15)), rejected: Math.max(0, Math.floor(rejected * 0.15)) },
+    { day: "Wed", completed: Math.max(1, Math.floor(completed * 0.12)), rejected: Math.max(0, Math.floor(rejected * 0.12)) },
+    { day: "Thu", completed: Math.max(1, Math.floor(completed * 0.20)), rejected: Math.max(0, Math.floor(rejected * 0.20)) },
+    { day: "Fri", completed: Math.max(1, Math.floor(completed * 0.18)), rejected: Math.max(0, Math.floor(rejected * 0.18)) },
+    { day: "Sat", completed: Math.max(1, Math.floor(completed * 0.14)), rejected: Math.max(0, Math.floor(rejected * 0.14)) },
+    { day: "Sun", completed: Math.max(1, Math.floor(completed * 0.11)), rejected: Math.max(0, Math.floor(rejected * 0.11)) },
   ];
 
   const metrics = [
-    { icon: <Activity className="w-5 h-5 text-neon-cyan" />, label: "Total Workflows", value: String(workflows.length || 0), change: "+23%", color: "bg-neon-cyan/10", positive: true },
-    { icon: <CheckCircle className="w-5 h-5 text-neon-green" />, label: "Approval Rate", value: `${approvalRate}%`, change: "+5%", color: "bg-neon-green/10", positive: true },
-    { icon: <Clock className="w-5 h-5 text-yellow-400" />, label: "Avg Settlement", value: "2.4s", change: "-18%", color: "bg-yellow-400/10", positive: true },
+    { icon: <Activity className="w-5 h-5" />, label: "Total Workflows", value: workflows.length, suffix: "", decimals: 0, change: "+23%", pos: true, color: "text-neon-cyan", grad: "from-neon-cyan/15 to-neon-cyan/5", border: "border-neon-cyan/20" },
+    { icon: <CheckCircle className="w-5 h-5" />, label: "Approval Rate", value: approvalRate, suffix: "%", decimals: 0, change: "+5%", pos: true, color: "text-emerald-400", grad: "from-emerald-400/15 to-emerald-400/5", border: "border-emerald-400/20" },
+    { icon: <Clock className="w-5 h-5" />, label: "Avg Settlement", value: 2.4, suffix: "s", decimals: 1, change: "-18%", pos: true, color: "text-amber-400", grad: "from-amber-400/15 to-amber-400/5", border: "border-amber-400/20" },
     {
-      icon: <DollarSign className="w-5 h-5 text-neon-purple" />,
-      label: "Pool Balance",
-      value: poolBalance ? `${parseFloat(formatEther(poolBalance as bigint)).toFixed(3)} ETH` : "—",
-      change: "+41%", color: "bg-neon-purple/10", positive: true
+      icon: <DollarSign className="w-5 h-5" />, label: "Pool Balance",
+      value: IS_DEMO ? 4.75 : (poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : 0),
+      suffix: " ETH", decimals: 3, change: "+41%", pos: true, color: "text-violet-400", grad: "from-violet-400/15 to-violet-400/5", border: "border-violet-400/20"
     },
-  ];
+  ] as const;
 
   return (
-    <div className="min-h-screen bg-dark-900 pt-20 pb-16">
+    <div className="min-h-screen bg-dark-900 pt-20 pb-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        <div className="py-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <TrendingUp className="w-8 h-8 text-neon-cyan" /> Analytics
-            </h1>
-            <p className="text-slate-400 mt-1">
-              {isConnected && isCorrectNetwork ? "Live onchain data" : "Protocol performance metrics"}
-            </p>
-          </div>
-          {isLoading && <Loader2 className="w-5 h-5 text-neon-cyan animate-spin" />}
+        <div className="py-8">
+          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+            <TrendingUp className="w-8 h-8 text-neon-cyan" /> Analytics
+          </h1>
+          <p className="text-slate-400 mt-1 text-sm">
+            {IS_DEMO ? "Demo data — deploy contract for live metrics" : "Live onchain protocol metrics"}
+          </p>
         </div>
 
-        {/* Metric cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Metrics */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {metrics.map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07 }}
-              className="bg-dark-700 border border-slate-800 rounded-2xl p-5"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${m.color}`}>{m.icon}</div>
-              <div className="text-xl font-bold text-white font-mono">{m.value}</div>
-              <div className="text-slate-400 text-sm">{m.label}</div>
-              <div className={`text-xs mt-1 font-mono ${m.positive ? "text-neon-green" : "text-pink-500"}`}>{m.change} vs last week</div>
+            <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+              className={`bg-gradient-to-br ${m.grad} border ${m.border} rounded-2xl p-5 hover:scale-[1.02] transition-all duration-200`}>
+              <div className={`${m.color} mb-3 opacity-80`}>{m.icon}</div>
+              <div className={`text-2xl font-bold font-mono ${m.color}`}>
+                <CountUp value={m.value} decimals={m.decimals} suffix={m.suffix} />
+              </div>
+              <div className="text-slate-400 text-sm mt-1">{m.label}</div>
+              <div className="text-emerald-400 text-xs font-mono mt-1">{m.change} vs last week</div>
             </motion.div>
           ))}
         </div>
 
         {/* Charts row 1 */}
-        <div className="grid lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-2 bg-dark-700 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-white font-semibold mb-6">Weekly Volume (ETH)</h3>
+        <div className="grid lg:grid-cols-3 gap-5 mb-5">
+          {/* Area chart */}
+          <div className="lg:col-span-2 bg-dark-800 border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-white font-semibold mb-1">Weekly Volume (ETH)</h3>
+            <p className="text-slate-500 text-xs mb-5">Loan vs payment volume over 7 days</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={volumeData}>
                 <defs>
-                  <linearGradient id="loanGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00f5ff" stopOpacity={0.25} />
+                  <linearGradient id="lG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#00f5ff" stopOpacity={0.2} />
                     <stop offset="95%" stopColor="#00f5ff" stopOpacity={0} />
                   </linearGradient>
-                  <linearGradient id="payGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0} />
+                  <linearGradient id="pG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
-                <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="day" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ color: "#64748b", fontSize: "12px" }} />
-                <Area type="monotone" dataKey="loans" stroke="#00f5ff" fill="url(#loanGrad)" strokeWidth={2} name="Loans" />
-                <Area type="monotone" dataKey="payments" stroke="#a855f7" fill="url(#payGrad)" strokeWidth={2} name="Payments" />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: "12px", paddingTop: "12px" }} />
+                <Area type="monotone" dataKey="loans" stroke="#00f5ff" fill="url(#lG)" strokeWidth={2} name="Loans" dot={false} />
+                <Area type="monotone" dataKey="payments" stroke="#a78bfa" fill="url(#pG)" strokeWidth={2} name="Payments" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-dark-700 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-white font-semibold mb-4">Workflow States</h3>
+          {/* Pie */}
+          <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-white font-semibold mb-1">Workflow States</h3>
+            <p className="text-slate-500 text-xs mb-4">Current distribution</p>
             {pieData.length === 0 ? (
-              <div className="h-48 flex items-center justify-center text-slate-600 text-sm">
-                {isConnected ? "No data yet" : "Connect wallet to see live data"}
-              </div>
+              <div className="h-44 flex items-center justify-center text-slate-600 text-sm">No data</div>
             ) : (
               <>
-                <ResponsiveContainer width="100%" height={160}>
+                <ResponsiveContainer width="100%" height={150}>
                   <PieChart>
-                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value">
-                      {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={38} outerRadius={65} paddingAngle={3} dataKey="value">
+                      {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
                     </Pie>
                     <Tooltip contentStyle={tooltipStyle} />
                   </PieChart>
                 </ResponsiveContainer>
-                <div className="space-y-2 mt-3">
+                <div className="space-y-1.5 mt-3">
                   {pieData.map((item, i) => (
-                    <div key={i} className="flex items-center justify-between text-sm">
+                    <div key={i} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: item.color }} />
+                        <div className="w-2 h-2 rounded-full" style={{ background: item.color }} />
                         <span className="text-slate-400">{item.name}</span>
                       </div>
-                      <span className="text-white font-mono">{item.value}</span>
+                      <span className="text-white font-mono font-semibold">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -214,37 +186,39 @@ export default function Analytics() {
         </div>
 
         {/* Charts row 2 */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-dark-700 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-white font-semibold mb-6">Daily Workflow Outcomes</h3>
+        <div className="grid lg:grid-cols-2 gap-5">
+          <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-white font-semibold mb-1">Daily Outcomes</h3>
+            <p className="text-slate-500 text-xs mb-5">Completed vs rejected per day</p>
             <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={workflowData} barSize={14}>
+              <BarChart data={workflowBar} barSize={12} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
-                <XAxis dataKey="day" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="day" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ color: "#64748b", fontSize: "12px" }} />
-                <Bar dataKey="completed" fill="#a855f7" radius={[4, 4, 0, 0]} name="Completed" />
-                <Bar dataKey="rejected" fill="#ff006e" radius={[4, 4, 0, 0]} name="Rejected" />
+                <Legend wrapperStyle={{ color: "#64748b", fontSize: "12px", paddingTop: "12px" }} />
+                <Bar dataKey="completed" fill="#a78bfa" radius={[4, 4, 0, 0]} name="Completed" />
+                <Bar dataKey="rejected"  fill="#f43f5e" radius={[4, 4, 0, 0]} name="Rejected"  />
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-dark-700 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-white font-semibold mb-6">Avg Settlement Time (seconds)</h3>
+          <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-6 shadow-xl">
+            <h3 className="text-white font-semibold mb-1">Settlement Time</h3>
+            <p className="text-slate-500 text-xs mb-5">Average seconds per time of day</p>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={settlementData}>
                 <defs>
-                  <linearGradient id="settleGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#00ff87" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#00ff87" stopOpacity={0} />
+                  <linearGradient id="sG" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
-                <XAxis dataKey="time" tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: "#64748b", fontSize: 12 }} axisLine={false} tickLine={false} />
+                <XAxis dataKey="time" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="avg" stroke="#00ff87" fill="url(#settleGrad)" strokeWidth={2} name="Avg (s)" />
+                <Area type="monotone" dataKey="avg" stroke="#34d399" fill="url(#sG)" strokeWidth={2} name="Avg (s)" dot={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
