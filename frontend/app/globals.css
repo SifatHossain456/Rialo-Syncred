@@ -39,8 +39,35 @@ html {
 .glow-purple { box-shadow: 0 0 20px #a855f733, 0 0 40px #a855f711; }
 .glow-green { box-shadow: 0 0 20px #00ff8733, 0 0 40px #00ff8711; }
 
+.glow-cyan-lg { box-shadow: 0 0 40px #00f5ff44, 0 0 80px #00f5ff1a; }
+.glow-purple-lg { box-shadow: 0 0 40px #a855f744, 0 0 80px #a855f71a; }
+
 .text-glow-cyan { text-shadow: 0 0 20px #00f5ff, 0 0 40px #00f5ff55; }
 .text-glow-purple { text-shadow: 0 0 20px #a855f7, 0 0 40px #a855f755; }
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-dark {
+  background: rgba(8, 11, 20, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
 
 /* Shimmer animation for skeleton loaders */
 @keyframes shimmer {
@@ -55,6 +82,13 @@ html {
   background-size: 40px 40px;
 }
 
+/* Radial gradient background */
+.radial-bg {
+  background: radial-gradient(ellipse at 50% 0%, rgba(0, 245, 255, 0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 50%, rgba(168, 85, 247, 0.06) 0%, transparent 50%),
+              #080b14;
+}
+
 /* Animated border */
 @keyframes borderGlow {
   0%, 100% { border-color: #00f5ff44; }
@@ -62,6 +96,37 @@ html {
 }
 
 .border-animate { animation: borderGlow 3s ease-in-out infinite; }
+
+/* Neon button */
+.btn-neon {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+.btn-neon::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 245, 255, 0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.btn-neon:hover::before { opacity: 1; }
+
+/* Gradient text */
+.gradient-text-cyan {
+  background: linear-gradient(135deg, #00f5ff, #60efff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-purple {
+  background: linear-gradient(135deg, #a855f7, #c084fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 
 /* Status badge colors */
 .status-pending {
@@ -88,4 +153,25 @@ html {
   background: rgba(168, 85, 247, 0.1);
   color: #a855f7;
   border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+.float { animation: float 4s ease-in-out infinite; }
+
+/* Pulse ring */
+@keyframes pulseRing {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.pulse-ring::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulseRing 1.5s ease-out infinite;
 }
