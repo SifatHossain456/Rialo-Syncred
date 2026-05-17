@@ -1,0 +1,39 @@
+{
+  "name": "Syncred — Async Credit Protocol",
+  "short_name": "Syncred",
+  "description": "Decentralized async lending and payment verification on Rialo Testnet",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080b14",
+  "theme_color": "#00f5ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open workflow dashboard",
+      "url": "/dashboard"
+    },
+    {
+      "name": "Analytics",
+      "short_name": "Analytics",
+      "description": "View protocol analytics",
+      "url": "/analytics"
+    }
+  ]
+}

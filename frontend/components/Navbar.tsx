@@ -14,6 +14,7 @@ const links = [
   { href: "/profile", label: "Profile" },
   { href: "/admin", label: "Admin" },
   { href: "/analytics", label: "Analytics" },
+  { href: "/faucet", label: "Faucet" },
 ];
 
 function NetworkBadge() {
