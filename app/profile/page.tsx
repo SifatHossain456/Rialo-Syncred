@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
 import { MOCK_WORKFLOWS, isDemoMode, type Workflow } from "@/lib/mockData";
+import { useEthPrice, fmtUsd } from "@/hooks/useEthPrice";
 
 const IS_DEMO = isDemoMode();
 
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const [copied, setCopied] = useState(false);
 
   const { data: balance } = useBalance({ address });
+  const { price: ethPrice } = useEthPrice();
 
   const { data: allWorkflows } = useReadContract({
     address: CONTRACT_ADDRESS, abi: ABI, functionName: "getAllWorkflows",
@@ -52,6 +54,7 @@ export default function ProfilePage() {
   const demoAddress = "0xDeA96c363A64d3e831B3ec3bACA1D1B7D50E2A45";
   const displayAddress = address ?? demoAddress;
 
+  // In demo mode, if wallet is connected use real address for display but show some demo workflows
   const workflows: Workflow[] = IS_DEMO
     ? MOCK_WORKFLOWS.filter((w) => w.user.toLowerCase() === demoAddress.toLowerCase())
     : ((allWorkflows as Workflow[]) ?? []).filter((w) => w.user.toLowerCase() === address?.toLowerCase());
@@ -125,9 +128,16 @@ export default function ProfilePage() {
             {balance && (
               <div className="flex items-center justify-between text-sm mb-4 bg-dark-900/40 rounded-xl px-4 py-2.5">
                 <span className="text-slate-500 text-xs">Balance</span>
-                <span className="text-white font-mono font-semibold text-sm">
-                  {parseFloat(formatEther(balance.value)).toFixed(4)} {balance.symbol}
-                </span>
+                <div className="text-right">
+                  <span className="text-white font-mono font-semibold text-sm">
+                    {parseFloat(formatEther(balance.value)).toFixed(4)} {balance.symbol}
+                  </span>
+                  {ethPrice && (
+                    <div className="text-xs text-slate-500 font-mono">
+                      ≈ {fmtUsd(parseFloat(formatEther(balance.value)), ethPrice)}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             <a href={`${explorerUrl}/address/${displayAddress}`} target="_blank" rel="noopener noreferrer"
@@ -218,10 +228,15 @@ export default function ProfilePage() {
                     {wf.rejectReason && <div className="text-xs text-rose-400/80 mt-0.5">{wf.rejectReason}</div>}
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-mono font-bold mb-1.5">
+                    <div className="text-white font-mono font-bold mb-0.5">
                       {parseFloat(formatEther(wf.amount)).toFixed(4)}
                       <span className="text-slate-500 font-normal text-xs ml-1">ETH</span>
                     </div>
+                    {ethPrice && (
+                      <div className="text-xs text-slate-500 font-mono mb-1">
+                        {fmtUsd(parseFloat(formatEther(wf.amount)), ethPrice)}
+                      </div>
+                    )}
                     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${STATE_COLOR[wf.state]}`}>
                       {STATE_MAP[wf.state]}
                     </span>

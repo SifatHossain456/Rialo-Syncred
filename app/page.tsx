@@ -8,6 +8,7 @@ import {
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { isDemoMode } from "@/lib/mockData";
+import { useEthPrice } from "@/hooks/useEthPrice";
 
 const IS_DEMO = isDemoMode();
 
@@ -58,15 +59,16 @@ const steps = [
   { num: "05", title: "Funds Released", desc: "Settlement completes instantly. No admin needed.", color: "#00ff87" },
 ];
 
-const stats = [
-  { label: "Total Workflows", value: "1,247", color: "text-neon-cyan" },
-  { label: "Approval Rate",   value: "84.3%", color: "text-emerald-400" },
-  { label: "Avg Settlement",  value: "2.4s",  color: "text-violet-400" },
-  { label: "Total Volume",    value: "127 ETH", color: "text-amber-400" },
+const BASE_STATS = [
+  { label: "Total Workflows", value: "1,247",   color: "text-neon-cyan"   },
+  { label: "Approval Rate",   value: "84.3%",   color: "text-emerald-400" },
+  { label: "Avg Settlement",  value: "2.4s",    color: "text-violet-400"  },
+  { label: "Total Volume",    value: "127 ETH", color: "text-amber-400"   },
 ];
 
 export default function LandingPage() {
   const { isConnected } = useAccount();
+  const { price: ethPrice, change24h } = useEthPrice();
 
   return (
     <div className="min-h-screen bg-dark-900 radial-bg">
@@ -80,20 +82,33 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto">
-          {/* Badge */}
+          {/* Badge row */}
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2.5 bg-dark-800 border border-neon-cyan/25 rounded-full px-5 py-2 mb-10 shadow-lg"
+            className="flex flex-wrap items-center justify-center gap-3 mb-10"
           >
-            <span className="relative flex">
+            <div className="inline-flex items-center gap-2.5 bg-dark-800 border border-neon-cyan/25 rounded-full px-5 py-2 shadow-lg">
               <span className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse" />
-            </span>
-            <span className="text-neon-cyan text-sm font-mono tracking-wide">
-              {IS_DEMO ? "Demo Mode Active — Try it now" : "Live on Goerli Testnet"}
-            </span>
-            {IS_DEMO && <FlaskConical className="w-3.5 h-3.5 text-violet-400" />}
+              <span className="text-neon-cyan text-sm font-mono tracking-wide">
+                {IS_DEMO ? "Demo Mode Active — Try it now" : "Live on Goerli Testnet"}
+              </span>
+              {IS_DEMO && <FlaskConical className="w-3.5 h-3.5 text-violet-400" />}
+            </div>
+            {ethPrice && (
+              <div className="inline-flex items-center gap-2 bg-dark-800 border border-slate-700/60 rounded-full px-4 py-2 shadow-lg">
+                <span className="text-slate-400 text-xs font-mono">ETH</span>
+                <span className="text-white text-sm font-mono font-bold">
+                  ${ethPrice.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                </span>
+                {change24h !== null && (
+                  <span className={`text-xs font-mono ${change24h >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {change24h >= 0 ? "+" : ""}{change24h.toFixed(2)}%
+                  </span>
+                )}
+              </div>
+            )}
           </motion.div>
 
           {/* Headline */}
@@ -179,7 +194,7 @@ export default function LandingPage() {
         className="border-y border-slate-800/80 bg-dark-800/60 glass-dark py-10"
       >
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {stats.map((s, i) => (
+          {BASE_STATS.map((s, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 8 }}
@@ -187,7 +202,12 @@ export default function LandingPage() {
               transition={{ delay: 0.6 + i * 0.07 }}
             >
               <div className={`text-3xl font-bold font-mono ${s.color}`}>{s.value}</div>
-              <div className="text-slate-500 text-sm mt-1.5">{s.label}</div>
+              {s.label === "Total Volume" && ethPrice && (
+                <div className="text-xs text-slate-600 font-mono mt-0.5">
+                  ≈ ${(127 * ethPrice).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD
+                </div>
+              )}
+              <div className="text-slate-500 text-sm mt-1">{s.label}</div>
             </motion.div>
           ))}
         </div>

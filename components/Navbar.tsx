@@ -3,10 +3,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X, LayoutDashboard, User, Shield, BarChart2, Droplets, Home, BookOpen } from "lucide-react";
+import { Zap, Menu, X, LayoutDashboard, User, Shield, BarChart2, Droplets, Home, BookOpen, TrendingUp, TrendingDown } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useAccount, useChainId } from "wagmi";
+import { useAccount, useChainId, useGasPrice } from "wagmi";
+import { formatGwei } from "viem";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
+import { useEthPrice } from "@/hooks/useEthPrice";
 
 const links = [
   { href: "/",          label: "Home",      icon: <Home className="w-4 h-4" /> },
@@ -17,6 +19,42 @@ const links = [
   { href: "/faucet",    label: "Faucet",    icon: <Droplets className="w-4 h-4" /> },
   { href: "/deploy",    label: "Deploy",    icon: <BookOpen className="w-4 h-4" /> },
 ];
+
+function EthTicker() {
+  const { price, change24h } = useEthPrice();
+  const { data: gasData } = useGasPrice();
+  const { isConnected } = useAccount();
+
+  const up = (change24h ?? 0) >= 0;
+  const gasFmt = gasData ? Math.round(parseFloat(formatGwei(gasData))) : null;
+
+  if (!price && !gasData) return null;
+
+  return (
+    <div className="hidden lg:flex items-center gap-2">
+      {price && (
+        <div className="flex items-center gap-1.5 bg-dark-800/60 border border-slate-700/40 rounded-full px-3 py-1.5 text-xs font-mono">
+          <span className="text-slate-400">ETH</span>
+          <span className="text-white font-bold">${price.toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+          {change24h !== null && (
+            <span className={`flex items-center gap-0.5 ${up ? "text-emerald-400" : "text-rose-400"}`}>
+              {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {Math.abs(change24h).toFixed(1)}%
+            </span>
+          )}
+        </div>
+      )}
+      {gasFmt !== null && isConnected && (
+        <div className="flex items-center gap-1.5 bg-dark-800/60 border border-slate-700/40 rounded-full px-3 py-1.5 text-xs font-mono">
+          <span className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse" />
+          <span className="text-slate-400">Gas</span>
+          <span className="text-amber-300 font-semibold">{gasFmt}</span>
+          <span className="text-slate-500">gwei</span>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function NetworkBadge() {
   const chainId = useChainId();
@@ -53,7 +91,7 @@ export default function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 glass-dark border-b border-slate-800/80">
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0 group">
           <div className="w-8 h-8 bg-neon-cyan/15 rounded-lg flex items-center justify-center border border-neon-cyan/25 group-hover:border-neon-cyan/50 group-hover:bg-neon-cyan/20 transition-all">
@@ -87,7 +125,8 @@ export default function Navbar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <EthTicker />
           <NetworkBadge />
           <ConnectButton
             showBalance={false}

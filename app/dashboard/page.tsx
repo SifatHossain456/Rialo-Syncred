@@ -24,6 +24,7 @@ import SearchFilter, { FilterState, FilterType } from "@/components/SearchFilter
 import LiveFeed from "@/components/LiveFeed";
 import { SkeletonStatCard, SkeletonWorkflowRow } from "@/components/SkeletonCard";
 import { MOCK_WORKFLOWS, MOCK_POOL_BALANCE, isDemoMode, type Workflow } from "@/lib/mockData";
+import { useEthPrice, fmtUsd } from "@/hooks/useEthPrice";
 
 const IS_DEMO = isDemoMode();
 
@@ -63,6 +64,7 @@ export default function Dashboard() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
   const isCorrectNetwork = SUPPORTED_CHAINS.some((c) => c.id === chainId);
+  const { price: ethPrice } = useEthPrice();
 
   const [amount, setAmount] = useState("0.01");
   const [isLoanType, setIsLoanType] = useState(true);
@@ -357,6 +359,11 @@ export default function Dashboard() {
                     <CountUp value={s.value} decimals={s.suffix === " ETH" ? 3 : 0} suffix={s.suffix} />
                   </div>
                   <div className="text-slate-400 text-sm mt-1">{s.label}</div>
+                  {s.suffix === " ETH" && ethPrice && (
+                    <div className="text-xs text-slate-500 font-mono mt-0.5">
+                      ≈ {fmtUsd(s.value, ethPrice)}
+                    </div>
+                  )}
                 </motion.div>
               ))
           }
@@ -389,9 +396,16 @@ export default function Dashboard() {
               {/* Amount */}
               <div className="mb-3">
                 <label className="text-slate-400 text-xs mb-1.5 block font-medium uppercase tracking-wide">Amount (ETH)</label>
-                <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
-                  step="0.01" min="0.001" max="10"
-                  className="w-full bg-dark-900/80 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 transition-all" />
+                <div className="relative">
+                  <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)}
+                    step="0.01" min="0.001" max="10"
+                    className="w-full bg-dark-900/80 border border-slate-700 rounded-xl px-4 py-3 text-white font-mono text-sm focus:outline-none focus:border-neon-cyan/50 focus:ring-1 focus:ring-neon-cyan/20 transition-all pr-20" />
+                  {ethPrice && parseFloat(amount) > 0 && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-mono pointer-events-none">
+                      {fmtUsd(parseFloat(amount), ethPrice)}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Quick amounts */}
@@ -523,6 +537,11 @@ export default function Dashboard() {
                             {parseFloat(formatEther(wf.amount)).toFixed(4)}
                             <span className="text-slate-500 font-normal text-xs ml-1">ETH</span>
                           </div>
+                          {ethPrice && (
+                            <div className="text-xs text-slate-600 font-mono">
+                              {fmtUsd(parseFloat(formatEther(wf.amount)), ethPrice)}
+                            </div>
+                          )}
                           <StatusBadge state={wf.state} />
                           <div className="flex items-center gap-1.5">
                             {wf.state === 0 && wf.user.toLowerCase() === address?.toLowerCase() && (
