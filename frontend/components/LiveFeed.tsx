@@ -86,8 +86,8 @@ export default function LiveFeed({ workflows }: Props) {
   }
 
   return (
-    <div className="bg-dark-700 border border-slate-800 rounded-2xl overflow-hidden">
-      <div className="p-4 border-b border-slate-800 flex items-center gap-2">
+    <div className="bg-dark-800 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
+      <div className="px-4 py-3.5 border-b border-slate-700/50 flex items-center gap-2">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 bg-neon-green rounded-full animate-pulse" />
           <Zap className="w-4 h-4 text-neon-cyan" />
@@ -95,7 +95,7 @@ export default function LiveFeed({ workflows }: Props) {
         <span className="text-white font-semibold text-sm">Live Activity Feed</span>
       </div>
 
-      <div className="divide-y divide-slate-800/50 max-h-64 overflow-y-auto">
+      <div className="divide-y divide-slate-800/60 max-h-64 overflow-y-auto">
         <AnimatePresence initial={false}>
           {feed.length === 0 ? (
             <div className="p-6 text-center text-slate-600 text-sm">

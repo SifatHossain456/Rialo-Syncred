@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useChainId, useAccount } from "wagmi";
-import { Zap, ExternalLink, Github, Twitter, Droplets, LayoutDashboard, User, Shield, BarChart2, Home } from "lucide-react";
+import { Zap, ExternalLink, Github, Twitter, Droplets, LayoutDashboard, User, Shield, BarChart2, Home, BookOpen } from "lucide-react";
 import { CONTRACT_ADDRESS } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
 import { isDemoMode } from "@/lib/mockData";
@@ -15,6 +15,7 @@ const NAV = [
   { label: "Analytics", href: "/analytics",  icon: <BarChart2 className="w-3.5 h-3.5" /> },
   { label: "Admin",     href: "/admin",      icon: <Shield className="w-3.5 h-3.5" /> },
   { label: "Faucet",    href: "/faucet",     icon: <Droplets className="w-3.5 h-3.5" /> },
+  { label: "Deploy",    href: "/deploy",     icon: <BookOpen className="w-3.5 h-3.5" /> },
 ];
 
 const STACK = ["Solidity 0.8.20", "Next.js 14", "wagmi v2", "viem", "Recharts", "Framer Motion"];

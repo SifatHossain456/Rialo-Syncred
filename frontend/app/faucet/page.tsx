@@ -143,7 +143,7 @@ export default function FaucetPage() {
           </motion.div>
         ) : (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-            className="bg-dark-700 border border-slate-800 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center gap-4 justify-between">
+            className="bg-dark-800 border border-slate-700/50 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center gap-4 justify-between shadow-xl">
             <div className="flex items-center gap-3">
               <Wallet className="w-5 h-5 text-slate-400" />
               <div>
@@ -166,7 +166,7 @@ export default function FaucetPage() {
               <motion.div key={i}
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.08 }}
-                className="bg-dark-700 border border-slate-800 rounded-2xl p-5 hover:border-slate-700 transition-all">
+                className="bg-dark-800 border border-slate-700/50 rounded-2xl p-5 hover:border-slate-600/70 transition-all shadow-lg card-hover">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center font-mono text-neon-cyan text-sm font-bold flex-shrink-0">
                     {step.num}
@@ -199,7 +199,7 @@ export default function FaucetPage() {
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Droplets className="w-5 h-5 text-neon-cyan" /> Available Faucets
             </h2>
-            <div className="flex gap-1 bg-dark-800 border border-slate-700 rounded-xl p-1">
+            <div className="flex gap-1 bg-dark-900/80 border border-slate-700/60 rounded-xl p-1">
               {(["all", "Goerli", "Sepolia"] as const).map((n) => (
                 <button key={n} onClick={() => setActiveNetwork(n)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${activeNetwork === n ? "bg-neon-cyan/10 text-neon-cyan" : "text-slate-500 hover:text-slate-300"}`}>
@@ -215,7 +215,7 @@ export default function FaucetPage() {
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.06 }}
                 whileHover={{ y: -3, scale: 1.01 }}
-                className="block bg-dark-700 border border-slate-800 hover:border-slate-600 rounded-2xl p-5 transition-all group"
+                className="block bg-dark-800 border border-slate-700/50 hover:border-slate-600/70 rounded-2xl p-5 transition-all group shadow-lg"
                 style={faucet.recommended ? { borderColor: `${faucet.color}33` } : {}}>
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -249,7 +249,7 @@ export default function FaucetPage() {
 
         {/* Bottom tip */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
-          className="mt-10 bg-dark-700 border border-slate-800 rounded-2xl p-5 flex items-start gap-4">
+          className="mt-10 bg-dark-800 border border-slate-700/50 rounded-2xl p-5 flex items-start gap-4 shadow-lg">
           <Info className="w-5 h-5 text-neon-cyan flex-shrink-0 mt-0.5" />
           <div className="text-slate-400 text-sm leading-relaxed">
             <span className="text-white font-semibold">Tip:</span> Goerli testnet ETH can sometimes be scarce. If one faucet doesn't work, try another. You only need about <span className="text-neon-cyan font-mono">0.05 ETH</span> to start testing Syncred workflows. Sepolia is an alternative if Goerli faucets are dry.

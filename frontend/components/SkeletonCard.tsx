@@ -16,7 +16,7 @@ function Shimmer({ className }: { className: string }) {
 
 export function SkeletonStatCard() {
   return (
-    <div className="bg-dark-700 border border-slate-800 rounded-2xl p-5">
+    <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-5">
       <Shimmer className="w-10 h-10 rounded-xl mb-3" />
       <Shimmer className="w-20 h-6 mb-2" />
       <Shimmer className="w-16 h-4" />
@@ -45,7 +45,7 @@ export function SkeletonWorkflowRow() {
 
 export function SkeletonRequestForm() {
   return (
-    <div className="bg-dark-700 border border-slate-800 rounded-2xl p-6 space-y-4">
+    <div className="bg-dark-800 border border-slate-700/50 rounded-2xl p-6 space-y-4">
       <Shimmer className="w-32 h-6 mb-5" />
       <Shimmer className="w-full h-10 rounded-xl" />
       <Shimmer className="w-full h-28 rounded-xl" />

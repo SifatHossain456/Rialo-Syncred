@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X, LayoutDashboard, User, Shield, BarChart2, Droplets, Home } from "lucide-react";
+import { Zap, Menu, X, LayoutDashboard, User, Shield, BarChart2, Droplets, Home, BookOpen } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useChainId } from "wagmi";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
@@ -15,6 +15,7 @@ const links = [
   { href: "/analytics", label: "Analytics", icon: <BarChart2 className="w-4 h-4" /> },
   { href: "/admin",     label: "Admin",     icon: <Shield className="w-4 h-4" /> },
   { href: "/faucet",    label: "Faucet",    icon: <Droplets className="w-4 h-4" /> },
+  { href: "/deploy",    label: "Deploy",    icon: <BookOpen className="w-4 h-4" /> },
 ];
 
 function NetworkBadge() {
