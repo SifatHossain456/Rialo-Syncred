@@ -17,7 +17,7 @@ import CountUp from "@/components/CountUp";
 const DEPLOYED = isContractDeployed();
 
 const tooltipStyle = {
-  backgroundColor: "#0d1117", border: "1px solid #1e2535",
+  backgroundColor: "#0d0d24", border: "1px solid rgba(255,255,255,0.07)",
   borderRadius: "12px", color: "#e2e8f0", fontSize: "12px", padding: "10px 14px",
 };
 
@@ -93,7 +93,7 @@ export default function Analytics() {
           </p>
           <Link href="/deploy">
             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 transition-all text-sm">
               Follow the Setup Guide
             </motion.button>
           </Link>
@@ -109,7 +109,7 @@ export default function Analytics() {
         <div className="py-8 flex items-start justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-              <TrendingUp className="w-8 h-8 text-neon-cyan" /> Analytics
+              <TrendingUp className="w-8 h-8 text-indigo-400" /> Analytics
             </h1>
             <p className="text-slate-400 mt-1 text-sm">Live onchain protocol metrics — Goerli Testnet</p>
           </div>
@@ -209,15 +209,15 @@ export default function Analytics() {
                 ]}>
                   <defs>
                     <linearGradient id="lG" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00f5ff" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#00f5ff" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#818cf8" stopOpacity={0.22} />
+                      <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#131335" />
                   <XAxis dataKey="label" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => [`${v.toFixed(3)} ETH${ethPrice ? ` (${fmtUsd(v, ethPrice)})` : ""}`, ""]} />
-                  <Area type="monotone" dataKey="value" stroke="#00f5ff" fill="url(#lG)" strokeWidth={2} name="Volume" dot={false} />
+                  <Area type="monotone" dataKey="value" stroke="#818cf8" fill="url(#lG)" strokeWidth={2} name="Volume" dot={false} />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -270,7 +270,7 @@ export default function Analytics() {
             ) : (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={workflowBar} barSize={12} barGap={4}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e2535" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#131335" />
                   <XAxis dataKey="day" tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fill: "#475569", fontSize: 11 }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={tooltipStyle} />

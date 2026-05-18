@@ -91,7 +91,7 @@ export default function ProfilePage() {
           </p>
           <Link href="/deploy">
             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 transition-all text-sm">
               Follow the Setup Guide
             </motion.button>
           </Link>

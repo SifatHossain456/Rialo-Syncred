@@ -55,7 +55,7 @@ function timeAgo(ts: bigint) {
 }
 
 function fireConfetti() {
-  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ["#00f5ff", "#a855f7", "#00ff87", "#fbbf24"] });
+  confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 }, colors: ["#818cf8", "#c084fc", "#34d399", "#fbbf24"] });
   setTimeout(() => confetti({ particleCount: 50, angle: 60,  spread: 50, origin: { x: 0 } }), 300);
   setTimeout(() => confetti({ particleCount: 50, angle: 120, spread: 50, origin: { x: 1 } }), 420);
 }
@@ -194,7 +194,7 @@ export default function Dashboard() {
           </p>
           <Link href="/deploy">
             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 transition-all text-sm">
               Follow the Setup Guide
             </motion.button>
           </Link>
@@ -209,13 +209,13 @@ export default function Dashboard() {
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
           className="text-center max-w-sm w-full p-8 bg-dark-800 border border-slate-700/50 rounded-3xl shadow-2xl">
-          <div className="w-16 h-16 bg-gradient-to-br from-neon-cyan/20 to-neon-purple/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-neon-cyan/20">
-            <Wallet className="w-8 h-8 text-neon-cyan" />
+          <div className="w-16 h-16 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-indigo-400/20">
+            <Wallet className="w-8 h-8 text-indigo-400" />
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Connect Wallet</h2>
           <p className="text-slate-400 mb-7 text-sm leading-relaxed">Connect on Goerli Testnet to interact with the Syncred protocol.</p>
           <ConnectButton />
-          <a href="/faucet" className="block mt-5 text-xs text-slate-500 hover:text-neon-cyan transition-colors">
+          <a href="/faucet" className="block mt-5 text-xs text-slate-500 hover:text-indigo-400 transition-colors">
             Need Goerli ETH? — Faucet Guide
           </a>
         </motion.div>
@@ -374,7 +374,7 @@ export default function Dashboard() {
               {/* Submit */}
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
                 onClick={handleRequest} disabled={isSending || isConfirming}
-                className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 active:bg-cyan-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-neon-cyan/20">
+                className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 active:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-500/20">
                 {isSending || isConfirming
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
                   : <><Send className="w-4 h-4" /> {isLoanType ? "Request Loan" : "Verify Payment"}</>}
