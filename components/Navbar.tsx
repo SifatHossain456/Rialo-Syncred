@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, LayoutDashboard, User, Shield, BarChart2, Droplets, Home, TrendingUp, TrendingDown } from "lucide-react";
+import { Menu, X, LayoutDashboard, User, BarChart2, Droplets, Home, TrendingUp, TrendingDown } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useChainId, useGasPrice } from "wagmi";
 import { formatGwei } from "viem";
@@ -15,7 +15,6 @@ const links = [
   { href: "/dashboard", label: "Dashboard", icon: <LayoutDashboard className="w-3.5 h-3.5" /> },
   { href: "/profile",   label: "Profile",   icon: <User className="w-3.5 h-3.5" /> },
   { href: "/analytics", label: "Analytics", icon: <BarChart2 className="w-3.5 h-3.5" /> },
-  { href: "/admin",     label: "Admin",     icon: <Shield className="w-3.5 h-3.5" /> },
   { href: "/faucet",    label: "Faucet",    icon: <Droplets className="w-3.5 h-3.5" /> },
 ];
 

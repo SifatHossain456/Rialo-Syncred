@@ -179,30 +179,6 @@ export default function Dashboard() {
     }
   }
 
-  /* ── contract not deployed ───────────────────────── */
-  if (!DEPLOYED) {
-    return (
-      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-          className="text-center max-w-sm w-full p-8 bg-dark-800 border border-slate-700/50 rounded-3xl shadow-2xl">
-          <div className="w-16 h-16 bg-gradient-to-br from-amber-400/20 to-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-400/20">
-            <AlertTriangle className="w-8 h-8 text-amber-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Contract Not Deployed</h2>
-          <p className="text-slate-400 mb-7 text-sm leading-relaxed">
-            Set <code className="font-mono text-amber-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> to your deployed contract address, then restart the dev server.
-          </p>
-          <Link href="/deploy">
-            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-              className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 transition-all text-sm">
-              Follow the Setup Guide
-            </motion.button>
-          </Link>
-        </motion.div>
-      </div>
-    );
-  }
-
   /* ── not connected screen ────────────────────────── */
   if (!isConnected) {
     return (
@@ -243,6 +219,20 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
 
+        {/* Setup banner */}
+        {!DEPLOYED && (
+          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+            className="mt-6 flex items-start gap-3 bg-amber-400/6 border border-amber-400/20 rounded-2xl px-5 py-4">
+            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-300 text-sm font-semibold">Contract not configured</p>
+              <p className="text-amber-200/50 text-xs mt-0.5">
+                Set <code className="font-mono bg-amber-400/10 px-1 py-0.5 rounded text-amber-300 text-[11px]">NEXT_PUBLIC_CONTRACT_ADDRESS</code> in your Vercel environment variables to activate onchain features.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* Header */}
         <div className="py-7 flex items-center justify-between gap-4 flex-wrap">
           <div>
@@ -280,7 +270,7 @@ export default function Dashboard() {
           {isLoading
             ? Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
             : ([
-                { icon: <Activity className="w-5 h-5" />, label: "Total Workflows", value: stats.total, suffix: "", color: "text-neon-cyan",    grad: "from-neon-cyan/20  to-neon-cyan/5",   border: "border-neon-cyan/20"   },
+                { icon: <Activity className="w-5 h-5" />, label: "Total Workflows", value: stats.total, suffix: "", color: "text-indigo-400",  grad: "from-indigo-400/15 to-indigo-400/5",  border: "border-indigo-400/20"  },
                 { icon: <Clock className="w-5 h-5" />,    label: "Active",          value: stats.active,suffix: "", color: "text-amber-400",  grad: "from-amber-400/20 to-amber-400/5",  border: "border-amber-400/20"  },
                 { icon: <CheckCircle className="w-5 h-5" />,label: "Completed",     value: stats.completed,suffix:"",color:"text-emerald-400",grad: "from-emerald-400/20 to-emerald-400/5",border:"border-emerald-400/20"},
                 { icon: <DollarSign className="w-5 h-5" />, label: "Pool Balance",  value: stats.pool,  suffix: " ETH", color: "text-violet-400",  grad: "from-violet-400/20 to-violet-400/5",border: "border-violet-400/20"  },
@@ -373,11 +363,13 @@ export default function Dashboard() {
 
               {/* Submit */}
               <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                onClick={handleRequest} disabled={isSending || isConfirming}
-                className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 active:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-500/20">
-                {isSending || isConfirming
-                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
-                  : <><Send className="w-4 h-4" /> {isLoanType ? "Request Loan" : "Verify Payment"}</>}
+                onClick={handleRequest} disabled={isSending || isConfirming || !DEPLOYED}
+                className="w-full bg-indigo-500 text-white font-bold py-3 rounded-xl hover:bg-indigo-400 active:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-indigo-500/20">
+                {!DEPLOYED
+                  ? <><AlertTriangle className="w-4 h-4" /> Contract Required</>
+                  : isSending || isConfirming
+                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                    : <><Send className="w-4 h-4" /> {isLoanType ? "Request Loan" : "Verify Payment"}</>}
               </motion.button>
 
               {pendingTxHash && (
@@ -427,14 +419,19 @@ export default function Dashboard() {
                   {Array.from({ length: 6 }).map((_, i) => <SkeletonWorkflowRow key={i} />)}
                 </div>
               ) : displayed.length === 0 ? (
-                <div className="p-14 text-center">
-                  <Activity className="w-10 h-10 mx-auto mb-3 text-slate-700" />
-                  <p className="text-slate-500 text-sm">
-                    {workflows.length === 0 ? "No workflows submitted yet." : "No workflows match your filters."}
+                <div className="p-16 text-center">
+                  <div className="w-14 h-14 bg-dark-700/60 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/[0.05]">
+                    <Activity className="w-6 h-6 text-slate-700" />
+                  </div>
+                  <p className="text-slate-400 text-sm font-medium">
+                    {!DEPLOYED ? "Contract not configured" : workflows.length === 0 ? "No workflows yet" : "No results"}
+                  </p>
+                  <p className="text-slate-600 text-xs mt-1">
+                    {!DEPLOYED ? "Set NEXT_PUBLIC_CONTRACT_ADDRESS in Vercel" : workflows.length === 0 ? "Submit your first request using the form" : "Try adjusting your filters"}
                   </p>
                   {(search || filterState !== "all" || filterType !== "all") && (
                     <button onClick={() => { setSearch(""); setFilterState("all"); setFilterType("all"); }}
-                      className="mt-2 text-xs text-neon-cyan/60 hover:text-neon-cyan transition-all">
+                      className="mt-3 text-xs text-indigo-400/60 hover:text-indigo-400 transition-all">
                       Clear filters
                     </button>
                   )}
