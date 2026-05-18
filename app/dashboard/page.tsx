@@ -3,8 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock, CheckCircle, XCircle, Loader2, Activity, DollarSign,
-  Send, AlertTriangle, Wallet, RefreshCw, Ban, Download,
-  ChevronRight, FlaskConical
+  Send, AlertTriangle, Wallet, RefreshCw, Ban, Download, ChevronRight,
 } from "lucide-react";
 import {
   useAccount, useReadContract, useWriteContract,
@@ -12,9 +11,10 @@ import {
 } from "wagmi";
 import { parseEther, formatEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
 import toast from "react-hot-toast";
 import confetti from "canvas-confetti";
-import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
+import { ABI, CONTRACT_ADDRESS, isContractDeployed } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
 import { exportWorkflowsCSV } from "@/lib/csvExport";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -23,10 +23,10 @@ import WorkflowModal from "@/components/WorkflowModal";
 import SearchFilter, { FilterState, FilterType } from "@/components/SearchFilter";
 import LiveFeed from "@/components/LiveFeed";
 import { SkeletonStatCard, SkeletonWorkflowRow } from "@/components/SkeletonCard";
-import { MOCK_WORKFLOWS, MOCK_POOL_BALANCE, isDemoMode, type Workflow } from "@/lib/mockData";
+import { type Workflow } from "@/lib/mockData";
 import { useEthPrice, fmtUsd } from "@/hooks/useEthPrice";
 
-const IS_DEMO = isDemoMode();
+const DEPLOYED = isContractDeployed();
 
 const STATE_CONFIG = {
   0: { label: "Pending",   icon: <Clock className="w-3 h-3" />,                        color: "text-amber-400",   bg: "bg-amber-400/10  border-amber-400/25"  },
@@ -77,9 +77,6 @@ export default function Dashboard() {
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [pendingTxHash, setPendingTxHash] = useState<`0x${string}` | undefined>();
   const [cancelTxHash, setCancelTxHash] = useState<`0x${string}` | undefined>();
-  const [demoWorkflows, setDemoWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
-  const [useFallback, setUseFallback] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(!IS_DEMO);
   const prevCompletedRef = useRef(0);
 
   /* ── chain reads ─────────────────────────────────── */
@@ -87,31 +84,14 @@ export default function Dashboard() {
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getAllWorkflows",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: DEPLOYED && isConnected && isCorrectNetwork },
   });
   const { data: poolBalance } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getContractBalance",
-    query: { enabled: !IS_DEMO && isCorrectNetwork && !useFallback },
+    query: { enabled: DEPLOYED && isCorrectNetwork },
   });
-
-  /* ── load timeout: after 4s with no data, use demo fallback ── */
-  useEffect(() => {
-    if (IS_DEMO) return;
-    const timer = setTimeout(() => {
-      setInitialLoading(false);
-      if (!chainWorkflows) setUseFallback(true);
-    }, 4000);
-    return () => clearTimeout(timer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (chainWorkflows) {
-      setInitialLoading(false);
-      setUseFallback(false);
-    }
-  }, [chainWorkflows]);
 
   /* ── write ───────────────────────────────────────── */
   const { writeContractAsync, isPending: isSending } = useWriteContract();
@@ -120,10 +100,10 @@ export default function Dashboard() {
 
   /* ── refresh ─────────────────────────────────────── */
   const doRefresh = useCallback(async () => {
-    if (!IS_DEMO && !useFallback) await refetch();
+    await refetch();
     setLastRefreshed(new Date());
-  }, [refetch, useFallback]);
-  useAutoRefresh(doRefresh, 15000, autoRefresh && isConnected);
+  }, [refetch]);
+  useAutoRefresh(doRefresh, 15000, autoRefresh && isConnected && DEPLOYED);
 
   /* ── tx effects ──────────────────────────────────── */
   useEffect(() => {
@@ -133,11 +113,7 @@ export default function Dashboard() {
     if (isCancelConfirmed) { toast.success("Workflow cancelled."); refetch(); setCancelTxHash(undefined); }
   }, [isCancelConfirmed, refetch]);
 
-  /* ── merge real + demo data ──────────────────────── */
-  const isEffectivelyDemo = IS_DEMO || useFallback;
-  const workflows: Workflow[] = isEffectivelyDemo
-    ? demoWorkflows
-    : (chainWorkflows as Workflow[] | undefined) ?? [];
+  const workflows: Workflow[] = (chainWorkflows as Workflow[] | undefined) ?? [];
 
   /* ── confetti on new completions ─────────────────── */
   useEffect(() => {
@@ -147,9 +123,7 @@ export default function Dashboard() {
   }, [workflows]);
 
   /* ── stats ───────────────────────────────────────── */
-  const pool = isEffectivelyDemo
-    ? parseFloat(formatEther(MOCK_POOL_BALANCE))
-    : poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : 0;
+  const pool = poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : 0;
 
   const stats = {
     total: workflows.length,
@@ -174,43 +148,8 @@ export default function Dashboard() {
     return true;
   });
 
-  /* ── demo request ────────────────────────────────── */
-  function handleDemoRequest() {
-    if (!amount || parseFloat(amount) <= 0) return toast.error("Enter a valid amount");
-    const pe = parseEther;
-    const now = BigInt(Math.floor(Date.now() / 1000));
-    const newId = BigInt(demoWorkflows.length + 1);
-    const newWf: Workflow = {
-      id: newId,
-      user: address ?? "0xDemo0000000000000000000000000000000000000",
-      amount: pe(amount),
-      state: 0,
-      createdAt: now,
-      updatedAt: now,
-      rejectReason: "",
-      isLoan: isLoanType,
-    };
-    setDemoWorkflows((p) => [newWf, ...p]);
-    toast.success("Demo workflow created!", { icon: "🎭" });
-
-    // Simulate verification flow
-    setTimeout(() => setDemoWorkflows((p) =>
-      p.map((w) => w.id === newId ? { ...w, state: 1 as const, updatedAt: BigInt(Math.floor(Date.now() / 1000)) } : w)), 1500);
-    setTimeout(() => {
-      const approved = Math.random() > 0.2;
-      setDemoWorkflows((p) =>
-        p.map((w) => w.id === newId ? {
-          ...w,
-          state: approved ? 4 as const : 3 as const,
-          rejectReason: approved ? "" : "Low credit score (demo)",
-          updatedAt: BigInt(Math.floor(Date.now() / 1000))
-        } : w));
-      if (approved) fireConfetti();
-    }, 4000);
-  }
-
-  /* ── real request ────────────────────────────────── */
-  async function handleRealRequest() {
+  /* ── write handlers ──────────────────────────────── */
+  async function handleRequest() {
     if (!isConnected) return toast.error("Connect your wallet first");
     if (!isCorrectNetwork) return toast.error("Switch to Goerli Testnet");
     if (!amount || parseFloat(amount) <= 0) return toast.error("Enter a valid amount");
@@ -222,7 +161,7 @@ export default function Dashboard() {
         args: [parseEther(amount)],
       });
       setPendingTxHash(hash);
-      toast.success("Tx submitted!", { id: toastId });
+      toast.success("Transaction submitted!", { id: toastId });
     } catch (err: any) {
       toast.error(err?.shortMessage || "Transaction failed", { id: toastId });
     }
@@ -230,10 +169,6 @@ export default function Dashboard() {
 
   async function handleCancel(id: bigint, e: React.MouseEvent) {
     e.stopPropagation();
-    if (isEffectivelyDemo) {
-      setDemoWorkflows((p) => p.map((w) => w.id === id ? { ...w, state: 5 as const } : w));
-      return toast.success("Demo cancelled");
-    }
     const toastId = toast.loading("Cancelling...");
     try {
       const hash = await writeContractAsync({ address: CONTRACT_ADDRESS, abi: ABI, functionName: "cancelWorkflow", args: [id] });
@@ -244,11 +179,32 @@ export default function Dashboard() {
     }
   }
 
-  const handleRequest = isEffectivelyDemo ? handleDemoRequest : handleRealRequest;
-  const showLoading = initialLoading;
+  /* ── contract not deployed ───────────────────────── */
+  if (!DEPLOYED) {
+    return (
+      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-sm w-full p-8 bg-dark-800 border border-slate-700/50 rounded-3xl shadow-2xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-400/20 to-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-400/20">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Contract Not Deployed</h2>
+          <p className="text-slate-400 mb-7 text-sm leading-relaxed">
+            Set <code className="font-mono text-amber-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> to your deployed contract address, then restart the dev server.
+          </p>
+          <Link href="/deploy">
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              Follow the Setup Guide
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
 
   /* ── not connected screen ────────────────────────── */
-  if (!isConnected && !IS_DEMO) {
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -260,14 +216,14 @@ export default function Dashboard() {
           <p className="text-slate-400 mb-7 text-sm leading-relaxed">Connect on Goerli Testnet to interact with the Syncred protocol.</p>
           <ConnectButton />
           <a href="/faucet" className="block mt-5 text-xs text-slate-500 hover:text-neon-cyan transition-colors">
-            Need Goerli ETH? → Faucet Guide
+            Need Goerli ETH? — Faucet Guide
           </a>
         </motion.div>
       </div>
     );
   }
 
-  if (!isCorrectNetwork && !IS_DEMO && isConnected) {
+  if (!isCorrectNetwork) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -286,28 +242,6 @@ export default function Dashboard() {
       <WorkflowModal workflow={selectedWf} onClose={() => setSelectedWf(null)} chainId={chainId} />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
-
-        {/* Demo / fallback banner */}
-        {isEffectivelyDemo && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-            className="mt-6 flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-5 py-3">
-            <FlaskConical className="w-4 h-4 text-violet-400 flex-shrink-0" />
-            <p className="text-violet-300 text-sm">
-              <span className="font-semibold">{useFallback ? "Preview Mode" : "Demo Mode"}</span>
-              <span className="text-violet-400">
-                {useFallback
-                  ? " — Connected but no contract found on this network. Showing sample data."
-                  : " — No contract deployed. Showing mock data. Set "}
-              </span>
-              {!useFallback && (
-                <>
-                  <code className="font-mono text-violet-200 bg-violet-900/40 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code>
-                  <span className="text-violet-400"> to go live.</span>
-                </>
-              )}
-            </p>
-          </motion.div>
-        )}
 
         {/* Header */}
         <div className="py-7 flex items-center justify-between gap-4 flex-wrap">
@@ -343,7 +277,7 @@ export default function Dashboard() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {showLoading
+          {isLoading
             ? Array.from({ length: 4 }).map((_, i) => <SkeletonStatCard key={i} />)
             : ([
                 { icon: <Activity className="w-5 h-5" />, label: "Total Workflows", value: stats.total, suffix: "", color: "text-neon-cyan",    grad: "from-neon-cyan/20  to-neon-cyan/5",   border: "border-neon-cyan/20"   },
@@ -421,7 +355,7 @@ export default function Dashboard() {
 
               {/* Info rows */}
               <div className="bg-dark-900/60 rounded-xl p-3 mb-4 space-y-1.5">
-                {[["KYC", "Automated ✓"], ["Credit Check", "Automated ✓"], ["Settlement", "On approval"]].map(([k, v]) => (
+                {[["KYC", "Automated"], ["Credit Check", "Automated"], ["Settlement", "On approval"]].map(([k, v]) => (
                   <div key={k} className="flex justify-between text-xs">
                     <span className="text-slate-500">{k}</span>
                     <span className="text-emerald-400 font-medium">{v}</span>
@@ -433,7 +367,7 @@ export default function Dashboard() {
               {(isConfirming || isSending) && (
                 <div className="flex items-center gap-2 bg-neon-cyan/8 border border-neon-cyan/20 rounded-xl px-4 py-3 mb-4">
                   <Loader2 className="w-4 h-4 text-neon-cyan animate-spin flex-shrink-0" />
-                  <span className="text-neon-cyan text-sm">{isSending ? "Waiting for signature..." : "Confirming..."}</span>
+                  <span className="text-neon-cyan text-sm">{isSending ? "Waiting for signature..." : "Confirming on chain..."}</span>
                 </div>
               )}
 
@@ -449,7 +383,7 @@ export default function Dashboard() {
               {pendingTxHash && (
                 <a href={`https://goerli.etherscan.io/tx/${pendingTxHash}`} target="_blank" rel="noopener noreferrer"
                   className="block text-center text-neon-cyan/50 hover:text-neon-cyan text-xs font-mono mt-3 transition-all">
-                  View on Etherscan ↗
+                  View on Etherscan
                 </a>
               )}
             </div>
@@ -488,14 +422,16 @@ export default function Dashboard() {
 
             {/* Rows */}
             <div className="overflow-y-auto flex-1" style={{ maxHeight: 520 }}>
-              {showLoading ? (
+              {isLoading ? (
                 <div className="divide-y divide-slate-800">
                   {Array.from({ length: 6 }).map((_, i) => <SkeletonWorkflowRow key={i} />)}
                 </div>
               ) : displayed.length === 0 ? (
                 <div className="p-14 text-center">
                   <Activity className="w-10 h-10 mx-auto mb-3 text-slate-700" />
-                  <p className="text-slate-500 text-sm">No workflows found</p>
+                  <p className="text-slate-500 text-sm">
+                    {workflows.length === 0 ? "No workflows submitted yet." : "No workflows match your filters."}
+                  </p>
                   {(search || filterState !== "all" || filterType !== "all") && (
                     <button onClick={() => { setSearch(""); setFilterState("all"); setFilterType("all"); }}
                       className="mt-2 text-xs text-neon-cyan/60 hover:text-neon-cyan transition-all">
@@ -563,7 +499,7 @@ export default function Dashboard() {
 
             {displayed.length > 0 && (
               <div className="px-5 py-3 border-t border-slate-800/60 text-xs text-slate-600 text-center">
-                Click any row to view full details & execution timeline
+                Click any row to view full details and execution timeline
               </div>
             )}
           </div>

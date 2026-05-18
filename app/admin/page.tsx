@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield, CheckCircle, XCircle, Clock, Loader2,
-  AlertTriangle, Wallet, RefreshCw, DollarSign, Lock, FlaskConical
+  AlertTriangle, Wallet, RefreshCw, DollarSign, Lock
 } from "lucide-react";
 import {
   useAccount, useReadContract, useWriteContract,
@@ -11,14 +11,13 @@ import {
 } from "wagmi";
 import { formatEther, parseEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import Link from "next/link";
 import toast from "react-hot-toast";
-import { ABI, CONTRACT_ADDRESS, STATE_MAP } from "@/lib/contract";
+import { ABI, CONTRACT_ADDRESS, STATE_MAP, isContractDeployed } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
-import { MOCK_WORKFLOWS, isDemoMode, type Workflow } from "@/lib/mockData";
+import { type Workflow } from "@/lib/mockData";
 
-const IS_DEMO = isDemoMode();
-
-type WFState = 0 | 1 | 2 | 3 | 4 | 5;
+const DEPLOYED = isContractDeployed();
 
 export default function AdminPanel() {
   const { address, isConnected } = useAccount();
@@ -31,25 +30,22 @@ export default function AdminPanel() {
   const [actionTxHash, setActionTxHash] = useState<`0x${string}` | undefined>();
   const [logs, setLogs] = useState<{ id: string; action: string; time: string }[]>([]);
 
-  // Demo state for pending workflows
-  const [demoWorkflows, setDemoWorkflows] = useState<Workflow[]>(MOCK_WORKFLOWS);
-
   // Contract owner
   const { data: owner } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "owner",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: DEPLOYED && isConnected && isCorrectNetwork },
   });
 
-  const isOwner = IS_DEMO ? true : (owner && address && owner.toLowerCase() === address.toLowerCase());
+  const isOwner = owner && address && owner.toLowerCase() === address.toLowerCase();
 
   // All workflows
   const { data: allWorkflows, refetch } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getAllWorkflows",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: DEPLOYED && isConnected && isCorrectNetwork && !!isOwner },
   });
 
   // Contract balance
@@ -57,7 +53,7 @@ export default function AdminPanel() {
     address: CONTRACT_ADDRESS,
     abi: ABI,
     functionName: "getContractBalance",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: DEPLOYED && isConnected && isCorrectNetwork && !!isOwner },
   });
 
   const { writeContractAsync, isPending } = useWriteContract();
@@ -71,52 +67,11 @@ export default function AdminPanel() {
     }
   }, [txConfirmed, refetch, refetchBalance]);
 
-  const workflows: Workflow[] = IS_DEMO
-    ? demoWorkflows
-    : ((allWorkflows as Workflow[] | undefined) ?? []);
-
+  const workflows: Workflow[] = (allWorkflows as Workflow[] | undefined) ?? [];
   const pendingWfs = workflows.filter((w) => w.state === 0 || w.state === 1);
-
-  const displayPoolBalance = IS_DEMO
-    ? 4.75
-    : (poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : null);
-
-  // Demo actions
-  function demoApprove(id: bigint) {
-    const toastId = toast.loading(`Approving #${id}...`);
-    setTimeout(() => {
-      setDemoWorkflows((prev) =>
-        prev.map((w) => w.id === id ? { ...w, state: 4 as WFState, updatedAt: BigInt(Math.floor(Date.now() / 1000)) } : w)
-      );
-      setLogs((p) => [{ id: id.toString(), action: "APPROVED", time: new Date().toLocaleTimeString() }, ...p.slice(0, 19)]);
-      toast.success(`Approved #${id}!`, { id: toastId });
-    }, 1000);
-  }
-
-  function demoReject(id: bigint) {
-    const toastId = toast.loading(`Rejecting #${id}...`);
-    setTimeout(() => {
-      setDemoWorkflows((prev) =>
-        prev.map((w) => w.id === id ? { ...w, state: 3 as WFState, rejectReason, updatedAt: BigInt(Math.floor(Date.now() / 1000)) } : w)
-      );
-      setLogs((p) => [{ id: id.toString(), action: "REJECTED", time: new Date().toLocaleTimeString() }, ...p.slice(0, 19)]);
-      toast.success(`Rejected #${id}`, { id: toastId });
-      setRejectId(null);
-    }, 800);
-  }
-
-  function demoStartVerify(id: bigint) {
-    const toastId = toast.loading(`Starting verification #${id}...`);
-    setTimeout(() => {
-      setDemoWorkflows((prev) =>
-        prev.map((w) => w.id === id ? { ...w, state: 1 as WFState, updatedAt: BigInt(Math.floor(Date.now() / 1000)) } : w)
-      );
-      toast.success(`Verification started for #${id}`, { id: toastId });
-    }, 700);
-  }
+  const displayPoolBalance = poolBalance ? parseFloat(formatEther(poolBalance as bigint)) : null;
 
   async function approve(id: bigint) {
-    if (IS_DEMO) { demoApprove(id); return; }
     const toastId = toast.loading(`Approving #${id}...`);
     try {
       const hash = await writeContractAsync({
@@ -131,7 +86,6 @@ export default function AdminPanel() {
   }
 
   async function reject(id: bigint) {
-    if (IS_DEMO) { demoReject(id); return; }
     const toastId = toast.loading(`Rejecting #${id}...`);
     try {
       const hash = await writeContractAsync({
@@ -147,7 +101,6 @@ export default function AdminPanel() {
   }
 
   async function startVerify(id: bigint) {
-    if (IS_DEMO) { demoStartVerify(id); return; }
     const toastId = toast.loading(`Starting verification #${id}...`);
     try {
       const hash = await writeContractAsync({
@@ -161,10 +114,6 @@ export default function AdminPanel() {
   }
 
   async function depositFunds() {
-    if (IS_DEMO) {
-      toast.success(`Demo: Would deposit ${depositAmount} ETH to pool`);
-      return;
-    }
     const toastId = toast.loading("Depositing funds...");
     try {
       const hash = await writeContractAsync({
@@ -178,7 +127,31 @@ export default function AdminPanel() {
     }
   }
 
-  if (!isConnected && !IS_DEMO) {
+  /* ── contract not deployed ───────────────────────── */
+  if (!DEPLOYED) {
+    return (
+      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-sm w-full p-8 bg-dark-800 border border-slate-700/50 rounded-3xl shadow-2xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-400/20 to-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-400/20">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Contract Not Deployed</h2>
+          <p className="text-slate-400 mb-7 text-sm leading-relaxed">
+            The admin panel requires a deployed contract. Set <code className="font-mono text-amber-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> and restart.
+          </p>
+          <Link href="/deploy">
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              Follow the Setup Guide
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -192,7 +165,7 @@ export default function AdminPanel() {
     );
   }
 
-  if (!isCorrectNetwork && !IS_DEMO) {
+  if (!isCorrectNetwork) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -205,7 +178,7 @@ export default function AdminPanel() {
     );
   }
 
-  if (!IS_DEMO && isOwner === false) {
+  if (isOwner === false) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
@@ -213,7 +186,7 @@ export default function AdminPanel() {
           <Lock className="w-12 h-12 text-rose-500 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
           <p className="text-slate-400 text-sm mb-2">This panel is restricted to the contract owner.</p>
-          <p className="text-slate-600 text-xs font-mono">{owner?.slice(0, 12)}...</p>
+          <p className="text-slate-600 text-xs font-mono">{(owner as string | undefined)?.slice(0, 12)}...</p>
         </motion.div>
       </div>
     );
@@ -227,30 +200,16 @@ export default function AdminPanel() {
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Shield className="w-8 h-8 text-neon-purple" /> Admin Panel
             </h1>
-            <p className="text-slate-400 mt-1 text-sm">
-              {IS_DEMO ? "Demo mode — actions are simulated" : "Contract owner controls"}
-            </p>
+            <p className="text-slate-400 mt-1 text-sm">Contract owner controls — Goerli Testnet</p>
           </div>
-          {!IS_DEMO && (
-            <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              onClick={() => { refetch(); refetchBalance(); }}
-              className="flex items-center gap-2 bg-dark-800 border border-slate-700 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-sm transition-all"
-            >
-              <RefreshCw className="w-4 h-4" /> Refresh
-            </motion.button>
-          )}
+          <motion.button
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            onClick={() => { refetch(); refetchBalance(); }}
+            className="flex items-center gap-2 bg-dark-800 border border-slate-700 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-sm transition-all"
+          >
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </motion.button>
         </div>
-
-        {IS_DEMO && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-5 py-3 mb-6">
-            <FlaskConical className="w-4 h-4 text-violet-400 flex-shrink-0" />
-            <p className="text-violet-300 text-sm">
-              <span className="font-semibold">Demo Mode</span> — Approve/reject actions are simulated locally. Deploy contract for live admin control.
-            </p>
-          </motion.div>
-        )}
 
         {/* Pool balance + deposit */}
         <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -280,10 +239,10 @@ export default function AdminPanel() {
               />
               <motion.button
                 whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                onClick={depositFunds} disabled={!IS_DEMO && isPending}
+                onClick={depositFunds} disabled={isPending}
                 className="bg-emerald-400/20 border border-emerald-400/40 text-emerald-400 font-medium px-5 py-2 rounded-xl hover:bg-emerald-400/30 disabled:opacity-50 text-sm transition-all"
               >
-                {!IS_DEMO && isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Deposit"}
+                {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Deposit"}
               </motion.button>
             </div>
           </div>
@@ -353,7 +312,7 @@ export default function AdminPanel() {
                             <motion.button
                               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                               onClick={() => startVerify(wf.id)}
-                              disabled={!IS_DEMO && isPending}
+                              disabled={isPending}
                               className="text-xs bg-blue-500/20 border border-blue-500/40 text-blue-400 px-3 py-2 rounded-xl hover:bg-blue-500/30 disabled:opacity-50 transition-all whitespace-nowrap"
                             >
                               Start Verify
@@ -362,7 +321,7 @@ export default function AdminPanel() {
                           <motion.button
                             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                             onClick={() => approve(wf.id)}
-                            disabled={!IS_DEMO && isPending}
+                            disabled={isPending}
                             className="flex items-center gap-1.5 bg-emerald-400/20 border border-emerald-400/40 text-emerald-400 text-xs font-semibold px-3 py-2 rounded-xl hover:bg-emerald-400/30 disabled:opacity-50 transition-all"
                           >
                             <CheckCircle className="w-3.5 h-3.5" /> Approve
@@ -371,7 +330,7 @@ export default function AdminPanel() {
                             <motion.button
                               whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
                               onClick={() => reject(wf.id)}
-                              disabled={!IS_DEMO && isPending}
+                              disabled={isPending}
                               className="flex items-center gap-1.5 bg-rose-500/30 border border-rose-500/50 text-rose-300 text-xs font-semibold px-3 py-2 rounded-xl disabled:opacity-50 transition-all"
                             >
                               <XCircle className="w-3.5 h-3.5" /> Confirm Reject
@@ -403,7 +362,7 @@ export default function AdminPanel() {
             </div>
             <div className="divide-y divide-slate-800/50 max-h-96 overflow-y-auto">
               {logs.length === 0 ? (
-                <div className="p-10 text-center text-slate-600 text-sm">No actions yet</div>
+                <div className="p-10 text-center text-slate-600 text-sm">No actions this session</div>
               ) : (
                 logs.map((log, i) => (
                   <motion.div

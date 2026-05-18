@@ -2,6 +2,10 @@ export const CONTRACT_ADDRESS = (
   process.env.NEXT_PUBLIC_CONTRACT_ADDRESS || "0x0000000000000000000000000000000000000000"
 ) as `0x${string}`;
 
+export function isContractDeployed() {
+  return CONTRACT_ADDRESS !== "0x0000000000000000000000000000000000000000";
+}
+
 export const ABI = [
   {
     inputs: [],

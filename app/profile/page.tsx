@@ -3,14 +3,15 @@ import { motion } from "framer-motion";
 import { useAccount, useReadContract, useChainId, useBalance } from "wagmi";
 import { formatEther } from "viem";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { User, Wallet, TrendingUp, CheckCircle, XCircle, Clock, Activity, ExternalLink, Copy, Check, FlaskConical } from "lucide-react";
+import Link from "next/link";
+import { User, Wallet, TrendingUp, CheckCircle, XCircle, Clock, Activity, ExternalLink, Copy, Check, AlertTriangle } from "lucide-react";
 import { useState } from "react";
-import { ABI, CONTRACT_ADDRESS } from "@/lib/contract";
+import { ABI, CONTRACT_ADDRESS, isContractDeployed } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
-import { MOCK_WORKFLOWS, isDemoMode, type Workflow } from "@/lib/mockData";
+import { type Workflow } from "@/lib/mockData";
 import { useEthPrice, fmtUsd } from "@/hooks/useEthPrice";
 
-const IS_DEMO = isDemoMode();
+const DEPLOYED = isContractDeployed();
 
 const STATE_MAP: Record<number, string> = { 0:"PENDING",1:"VERIFYING",2:"APPROVED",3:"REJECTED",4:"COMPLETED",5:"CANCELLED" };
 const STATE_COLOR: Record<number, string> = {
@@ -41,7 +42,7 @@ export default function ProfilePage() {
 
   const { data: allWorkflows } = useReadContract({
     address: CONTRACT_ADDRESS, abi: ABI, functionName: "getAllWorkflows",
-    query: { enabled: !IS_DEMO && isConnected && isCorrectNetwork },
+    query: { enabled: DEPLOYED && isConnected && isCorrectNetwork },
   });
 
   function copyAddress() {
@@ -51,13 +52,9 @@ export default function ProfilePage() {
     setTimeout(() => setCopied(false), 1500);
   }
 
-  const demoAddress = "0xDeA96c363A64d3e831B3ec3bACA1D1B7D50E2A45";
-  const displayAddress = address ?? demoAddress;
-
-  // In demo mode, if wallet is connected use real address for display but show some demo workflows
-  const workflows: Workflow[] = IS_DEMO
-    ? MOCK_WORKFLOWS.filter((w) => w.user.toLowerCase() === demoAddress.toLowerCase())
-    : ((allWorkflows as Workflow[]) ?? []).filter((w) => w.user.toLowerCase() === address?.toLowerCase());
+  const workflows: Workflow[] = ((allWorkflows as Workflow[]) ?? []).filter(
+    (w) => w.user.toLowerCase() === address?.toLowerCase()
+  );
 
   const stats = {
     total: workflows.length,
@@ -70,21 +67,47 @@ export default function ProfilePage() {
       ? Math.round((workflows.filter((w) => w.state === 4).length / workflows.length) * 100) : 0,
   };
 
-  const creditScore = Math.min(1000, 400 + (parseInt(displayAddress.slice(-4), 16) % 400) + stats.completed * 20);
+  const creditScore = address
+    ? Math.min(1000, 400 + (parseInt(address.slice(-4), 16) % 400) + stats.completed * 20)
+    : 0;
   const creditLevel = creditScore >= 750 ? "Excellent" : creditScore >= 600 ? "Good" : creditScore >= 450 ? "Fair" : "Poor";
   const creditColor = creditScore >= 750 ? "text-emerald-400" : creditScore >= 600 ? "text-neon-cyan" : creditScore >= 450 ? "text-amber-400" : "text-rose-500";
   const creditBarColor = creditScore >= 750 ? "from-emerald-400 to-emerald-300" : creditScore >= 600 ? "from-neon-cyan to-cyan-300" : creditScore >= 450 ? "from-amber-400 to-amber-300" : "from-rose-500 to-rose-400";
 
   const explorerUrl = chainId === 11155111 ? "https://sepolia.etherscan.io" : "https://goerli.etherscan.io";
 
-  if (!isConnected && !IS_DEMO) {
+  /* ── contract not deployed ───────────────────────── */
+  if (!DEPLOYED) {
+    return (
+      <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+          className="text-center max-w-sm w-full p-8 bg-dark-800 border border-slate-700/50 rounded-3xl shadow-2xl">
+          <div className="w-16 h-16 bg-gradient-to-br from-amber-400/20 to-rose-500/20 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-amber-400/20">
+            <AlertTriangle className="w-8 h-8 text-amber-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">Contract Not Deployed</h2>
+          <p className="text-slate-400 mb-7 text-sm leading-relaxed">
+            Profile data requires a deployed contract. Set <code className="font-mono text-amber-300 bg-slate-800 px-1.5 py-0.5 rounded text-xs">NEXT_PUBLIC_CONTRACT_ADDRESS</code> and restart.
+          </p>
+          <Link href="/deploy">
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              className="w-full bg-neon-cyan text-dark-900 font-bold py-3 rounded-xl hover:bg-cyan-300 transition-all text-sm">
+              Follow the Setup Guide
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+    );
+  }
+
+  if (!isConnected) {
     return (
       <div className="min-h-screen bg-dark-900 pt-20 flex items-center justify-center p-6">
         <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
           className="text-center p-10 bg-dark-800 border border-slate-700/50 rounded-3xl max-w-sm shadow-2xl">
           <User className="w-12 h-12 text-slate-600 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Connect to view profile</h2>
-          <p className="text-slate-400 mb-6 text-sm">Your credit score and loan history will appear here.</p>
+          <p className="text-slate-400 mb-6 text-sm">Your credit score and workflow history will appear here.</p>
           <ConnectButton />
         </motion.div>
       </div>
@@ -99,14 +122,6 @@ export default function ProfilePage() {
           <p className="text-slate-400 mt-1 text-sm">Your onchain credit identity</p>
         </div>
 
-        {IS_DEMO && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-2xl px-5 py-3 mb-6">
-            <FlaskConical className="w-4 h-4 text-violet-400 flex-shrink-0" />
-            <p className="text-violet-300 text-sm"><span className="font-semibold">Demo Mode</span> — Showing sample profile data.</p>
-          </motion.div>
-        )}
-
         <div className="grid lg:grid-cols-3 gap-5 mb-6">
           {/* Wallet card */}
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
@@ -117,12 +132,12 @@ export default function ProfilePage() {
               </div>
               <div>
                 <div className="text-white font-semibold">Wallet</div>
-                <div className="text-xs text-slate-500 font-mono">{displayAddress.slice(0,6)}...{displayAddress.slice(-4)}</div>
+                <div className="text-xs text-slate-500 font-mono">{address?.slice(0,6)}...{address?.slice(-4)}</div>
               </div>
             </div>
             <button onClick={copyAddress}
               className="w-full flex items-center justify-between bg-dark-900/70 border border-slate-700 rounded-xl px-4 py-3 text-xs font-mono text-slate-400 hover:text-white hover:border-slate-600 transition-all group mb-4">
-              <span className="truncate mr-2">{displayAddress.slice(0,20)}...</span>
+              <span className="truncate mr-2">{address?.slice(0,20)}...</span>
               {copied ? <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" /> : <Copy className="w-4 h-4 flex-shrink-0 group-hover:text-neon-cyan" />}
             </button>
             {balance && (
@@ -140,7 +155,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
-            <a href={`${explorerUrl}/address/${displayAddress}`} target="_blank" rel="noopener noreferrer"
+            <a href={`${explorerUrl}/address/${address}`} target="_blank" rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-neon-cyan transition-all">
               <ExternalLink className="w-3.5 h-3.5" /> View on Etherscan
             </a>
@@ -155,7 +170,6 @@ export default function ProfilePage() {
             </div>
             <div className={`text-6xl font-bold font-mono ${creditColor} mb-1 leading-none`}>{creditScore}</div>
             <div className={`text-sm font-semibold ${creditColor} mb-5`}>{creditLevel}</div>
-            {/* Bar */}
             <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-3">
               <motion.div initial={{ width: 0 }} animate={{ width: `${(creditScore / 1000) * 100}%` }}
                 transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
@@ -212,7 +226,7 @@ export default function ProfilePage() {
             {workflows.length === 0 ? (
               <div className="p-14 text-center text-slate-600">
                 <Clock className="w-10 h-10 mx-auto mb-3 opacity-25" />
-                <p className="text-sm">No workflows yet.</p>
+                <p className="text-sm">No workflows submitted from this wallet yet.</p>
               </div>
             ) : (
               [...workflows].reverse().map((wf) => (

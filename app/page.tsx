@@ -3,14 +3,11 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import {
   ArrowRight, Zap, Shield, Clock, TrendingUp, ChevronRight,
-  Wallet, CheckCircle, Activity, FlaskConical
+  Wallet, CheckCircle, Activity
 } from "lucide-react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
-import { isDemoMode } from "@/lib/mockData";
 import { useEthPrice } from "@/hooks/useEthPrice";
-
-const IS_DEMO = isDemoMode();
 
 const features = [
   {
@@ -20,7 +17,6 @@ const features = [
     color: "text-neon-cyan",
     border: "hover:border-neon-cyan/30",
     bg: "hover:bg-neon-cyan/5",
-    glow: "#00f5ff",
   },
   {
     icon: <Shield className="w-6 h-6" />,
@@ -29,7 +25,6 @@ const features = [
     color: "text-violet-400",
     border: "hover:border-violet-400/30",
     bg: "hover:bg-violet-400/5",
-    glow: "#a855f7",
   },
   {
     icon: <Zap className="w-6 h-6" />,
@@ -38,7 +33,6 @@ const features = [
     color: "text-emerald-400",
     border: "hover:border-emerald-400/30",
     bg: "hover:bg-emerald-400/5",
-    glow: "#00ff87",
   },
   {
     icon: <TrendingUp className="w-6 h-6" />,
@@ -47,23 +41,22 @@ const features = [
     color: "text-amber-400",
     border: "hover:border-amber-400/30",
     bg: "hover:bg-amber-400/5",
-    glow: "#fbbf24",
   },
 ];
 
 const steps = [
-  { num: "01", title: "Connect Wallet", desc: "Connect MetaMask on Goerli Testnet", color: "#00f5ff" },
-  { num: "02", title: "Request Loan", desc: "Submit onchain loan request — enters PENDING state", color: "#a855f7" },
-  { num: "03", title: "Auto Verification", desc: "KYC + credit scoring runs automatically off-chain", color: "#fbbf24" },
-  { num: "04", title: "State Transition", desc: "Contract resumes with APPROVED or REJECTED result", color: "#60a5fa" },
-  { num: "05", title: "Funds Released", desc: "Settlement completes instantly. No admin needed.", color: "#00ff87" },
+  { num: "01", title: "Connect Wallet",     desc: "Connect MetaMask on Goerli Testnet",                           color: "#00f5ff" },
+  { num: "02", title: "Request Loan",        desc: "Submit onchain loan request — enters PENDING state",            color: "#a855f7" },
+  { num: "03", title: "Auto Verification",   desc: "KYC and credit scoring runs automatically off-chain",           color: "#fbbf24" },
+  { num: "04", title: "State Transition",    desc: "Contract resumes with APPROVED or REJECTED result",             color: "#60a5fa" },
+  { num: "05", title: "Funds Released",      desc: "Settlement completes instantly. No admin interaction required.", color: "#00ff87" },
 ];
 
-const BASE_STATS = [
-  { label: "Total Workflows", value: "1,247",   color: "text-neon-cyan"   },
-  { label: "Approval Rate",   value: "84.3%",   color: "text-emerald-400" },
-  { label: "Avg Settlement",  value: "2.4s",    color: "text-violet-400"  },
-  { label: "Total Volume",    value: "127 ETH", color: "text-amber-400"   },
+const protocolHighlights = [
+  { label: "Async workflow states",       color: "text-neon-cyan"   },
+  { label: "Automated KYC & credit",      color: "text-emerald-400" },
+  { label: "Non-custodial settlement",    color: "text-violet-400"  },
+  { label: "Onchain audit trail",         color: "text-amber-400"   },
 ];
 
 export default function LandingPage() {
@@ -91,10 +84,7 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center gap-2.5 bg-dark-800 border border-neon-cyan/25 rounded-full px-5 py-2 shadow-lg">
               <span className="w-2 h-2 bg-neon-cyan rounded-full animate-pulse" />
-              <span className="text-neon-cyan text-sm font-mono tracking-wide">
-                {IS_DEMO ? "Demo Mode Active — Try it now" : "Live on Goerli Testnet"}
-              </span>
-              {IS_DEMO && <FlaskConical className="w-3.5 h-3.5 text-violet-400" />}
+              <span className="text-neon-cyan text-sm font-mono tracking-wide">Live on Goerli Testnet</span>
             </div>
             {ethPrice && (
               <div className="inline-flex items-center gap-2 bg-dark-800 border border-slate-700/60 rounded-full px-4 py-2 shadow-lg">
@@ -134,7 +124,7 @@ export default function LandingPage() {
             transition={{ duration: 0.6, delay: 0.25 }}
             className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed"
           >
-            Syncred demonstrates Rialo-style async execution through a decentralized lending
+            Syncred demonstrates Rialo-style async execution through a decentralised lending
             protocol that waits for real-world verification before completing settlement.
           </motion.p>
 
@@ -145,19 +135,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, delay: 0.4 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center"
           >
-            {IS_DEMO ? (
-              <Link href="/dashboard">
-                <motion.button
-                  whileHover={{ scale: 1.04 }}
-                  whileTap={{ scale: 0.97 }}
-                  className="flex items-center gap-2.5 bg-neon-cyan text-dark-900 font-bold px-8 py-4 rounded-2xl glow-cyan hover:bg-cyan-300 transition-all text-base shadow-lg"
-                >
-                  <FlaskConical className="w-5 h-5" />
-                  Try Demo Dashboard
-                  <ArrowRight className="w-5 h-5" />
-                </motion.button>
-              </Link>
-            ) : isConnected ? (
+            {isConnected ? (
               <Link href="/dashboard">
                 <motion.button
                   whileHover={{ scale: 1.04 }}
@@ -186,7 +164,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Stats bar */}
+      {/* Protocol highlights bar */}
       <motion.section
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -194,20 +172,16 @@ export default function LandingPage() {
         className="border-y border-slate-800/80 bg-dark-800/60 glass-dark py-10"
       >
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          {BASE_STATS.map((s, i) => (
+          {protocolHighlights.map((h, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 + i * 0.07 }}
+              className="flex flex-col items-center gap-2"
             >
-              <div className={`text-3xl font-bold font-mono ${s.color}`}>{s.value}</div>
-              {s.label === "Total Volume" && ethPrice && (
-                <div className="text-xs text-slate-600 font-mono mt-0.5">
-                  ≈ ${(127 * ethPrice).toLocaleString("en-US", { maximumFractionDigits: 0 })} USD
-                </div>
-              )}
-              <div className="text-slate-500 text-sm mt-1">{s.label}</div>
+              <div className={`w-2 h-2 rounded-full bg-current ${h.color} opacity-70`} />
+              <div className={`text-sm font-semibold ${h.color}`}>{h.label}</div>
             </motion.div>
           ))}
         </div>
@@ -286,7 +260,6 @@ export default function LandingPage() {
                     background: `${step.color}12`,
                     borderColor: `${step.color}40`,
                     color: step.color,
-                    boxShadow: `0 0 0 0 ${step.color}20`,
                   }}
                 >
                   {step.num}
@@ -309,7 +282,6 @@ export default function LandingPage() {
           viewport={{ once: true }}
           className="max-w-2xl mx-auto relative overflow-hidden"
         >
-          {/* Glow bg */}
           <div className="absolute inset-0 bg-gradient-to-br from-neon-cyan/8 via-transparent to-violet-500/8 rounded-3xl" />
           <div className="relative bg-dark-800 border border-neon-cyan/20 rounded-3xl p-12 shadow-2xl glow-cyan">
             <div className="w-16 h-16 bg-neon-cyan/10 border border-neon-cyan/25 rounded-2xl flex items-center justify-center mx-auto mb-6">
@@ -319,32 +291,10 @@ export default function LandingPage() {
               Ready to experience<br />async finance?
             </h2>
             <p className="text-slate-400 mb-8 text-base leading-relaxed">
-              {IS_DEMO
-                ? "Try the full experience in demo mode — no wallet needed. See real-time workflow state transitions and analytics."
-                : "Connect your wallet on Goerli Testnet and request a loan — watch the verification workflow execute live onchain."
-              }
+              Connect your wallet on Goerli Testnet and request a loan — watch the verification workflow execute live onchain.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {IS_DEMO ? (
-                <>
-                  <Link href="/dashboard">
-                    <motion.button
-                      whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                      className="flex items-center justify-center gap-2 bg-neon-cyan text-dark-900 font-bold px-8 py-3.5 rounded-xl glow-cyan hover:bg-cyan-300 transition-all"
-                    >
-                      <FlaskConical className="w-5 h-5" /> Try Demo
-                    </motion.button>
-                  </Link>
-                  <Link href="/analytics">
-                    <motion.button
-                      whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
-                      className="flex items-center justify-center gap-2 bg-dark-900 border border-slate-700 text-white font-semibold px-8 py-3.5 rounded-xl hover:border-violet-400/40 transition-all"
-                    >
-                      <TrendingUp className="w-5 h-5 text-violet-400" /> Analytics
-                    </motion.button>
-                  </Link>
-                </>
-              ) : isConnected ? (
+              {isConnected ? (
                 <Link href="/dashboard">
                   <motion.button
                     whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
@@ -358,6 +308,14 @@ export default function LandingPage() {
                   <ConnectButton label="Connect Wallet to Start" />
                 </div>
               )}
+              <Link href="/analytics">
+                <motion.button
+                  whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+                  className="flex items-center justify-center gap-2 bg-dark-900 border border-slate-700 text-white font-semibold px-8 py-3.5 rounded-xl hover:border-violet-400/40 transition-all"
+                >
+                  <TrendingUp className="w-5 h-5 text-violet-400" /> Analytics
+                </motion.button>
+              </Link>
             </div>
 
             {/* Trust indicators */}

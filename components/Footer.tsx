@@ -2,11 +2,10 @@
 import Link from "next/link";
 import { useChainId, useAccount } from "wagmi";
 import { Zap, ExternalLink, Github, Twitter, Droplets, LayoutDashboard, User, Shield, BarChart2, Home, BookOpen } from "lucide-react";
-import { CONTRACT_ADDRESS } from "@/lib/contract";
+import { CONTRACT_ADDRESS, isContractDeployed } from "@/lib/contract";
 import { SUPPORTED_CHAINS } from "@/lib/wagmi";
-import { isDemoMode } from "@/lib/mockData";
 
-const IS_DEMO = isDemoMode();
+const IS_DEMO = !isContractDeployed();
 
 const NAV = [
   { label: "Home",      href: "/",          icon: <Home className="w-3.5 h-3.5" /> },
