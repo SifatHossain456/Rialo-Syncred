@@ -8,6 +8,7 @@ import {
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount } from "wagmi";
 import { useEthPrice } from "@/hooks/useEthPrice";
+import { LogoMark } from "@/components/Logo";
 
 const features = [
   {
@@ -76,6 +77,39 @@ export default function LandingPage() {
         </div>
 
         <div className="relative z-10 max-w-4xl mx-auto">
+
+          {/* Logo hero mark */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="flex justify-center mb-10"
+          >
+            <div className="relative">
+              {/* Glow behind logo */}
+              <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl scale-150" />
+              <div className="relative">
+                <svg width="88" height="88" viewBox="0 0 80 80" fill="none">
+                  <rect width="80" height="80" rx="22" fill="#818cf8" fillOpacity="0.10" />
+                  <rect x="1" y="1" width="78" height="78" rx="21" stroke="#818cf8" strokeOpacity="0.20" />
+                  <circle cx="40" cy="40" r="26" stroke="#818cf8" strokeOpacity="0.06" strokeWidth="1" />
+                  <path d="M18 40 C18 27 27 18 40 18 C53 18 62 27 62 40"
+                    stroke="#818cf8" strokeWidth="5" strokeLinecap="round" fill="none" />
+                  <path d="M55 30 L62 40 L55 50"
+                    stroke="#818cf8" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  <path d="M62 40 C62 53 53 62 40 62 C27 62 18 53 18 40"
+                    stroke="#c084fc" strokeWidth="5" strokeLinecap="round"
+                    strokeDasharray="7 6" strokeOpacity="0.60" fill="none" />
+                  <path d="M25 50 L18 40 L25 30"
+                    stroke="#c084fc" strokeWidth="5" strokeLinecap="round"
+                    strokeLinejoin="round" strokeOpacity="0.60" fill="none" />
+                  <circle cx="40" cy="40" r="4" fill="#818cf8" fillOpacity="0.9" />
+                  <circle cx="40" cy="40" r="7" stroke="#818cf8" strokeOpacity="0.18" strokeWidth="1" />
+                </svg>
+              </div>
+            </div>
+          </motion.div>
+
           {/* Badges */}
           <motion.div
             initial={{ opacity: 0, y: -12 }}

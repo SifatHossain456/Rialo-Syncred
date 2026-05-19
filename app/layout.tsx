@@ -7,23 +7,23 @@ import Footer from "@/components/Footer";
 import { Toaster } from "react-hot-toast";
 
 export const metadata: Metadata = {
-  title: "Syncred | Async Credit & Payment Protocol",
-  description: "Decentralized async lending and payment verification on Rialo Testnet",
+  title: "Syncred | Async Lending Protocol",
+  description: "Decentralized async lending and payment verification on Goerli Testnet — powered by Rialo.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.svg",
     apple: "/icon-192.png",
   },
   openGraph: {
-    title: "Syncred — Async Credit Protocol",
-    description: "Most blockchains process transactions instantly. We process workflows.",
+    title: "Syncred — Async Lending Protocol",
+    description: "DeFi that waits for the real world. Async execution, automated KYC, non-custodial settlement.",
     type: "website",
   },
-  keywords: ["DeFi", "lending", "async", "blockchain", "Rialo", "testnet", "Goerli"],
+  keywords: ["DeFi", "lending", "async", "blockchain", "Rialo", "Goerli", "testnet", "credit"],
 };
 
 export const viewport: Viewport = {
-  themeColor: "#00f5ff",
+  themeColor: "#818cf8",
   width: "device-width",
   initialScale: 1,
 };
@@ -48,9 +48,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 fontSize: "14px",
                 maxWidth: "380px",
               },
-              success: { iconTheme: { primary: "#00ff87", secondary: "#080b14" }, duration: 4000 },
-              error: { iconTheme: { primary: "#ff006e", secondary: "#080b14" }, duration: 5000 },
-              loading: { iconTheme: { primary: "#00f5ff", secondary: "#080b14" } },
+              success: { iconTheme: { primary: "#34d399", secondary: "#070714" }, duration: 4000 },
+              error:   { iconTheme: { primary: "#f87171", secondary: "#070714" }, duration: 5000 },
+              loading: { iconTheme: { primary: "#818cf8", secondary: "#070714" } },
             }}
           />
         </Providers>
