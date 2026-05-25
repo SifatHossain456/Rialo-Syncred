@@ -52,8 +52,7 @@ function formatTs(ts: bigint) {
 }
 
 function getExplorerUrl(chainId: number | undefined, addr: string, type: "address" | "tx" = "address") {
-  if (chainId === 11155111) return `https://sepolia.etherscan.io/${type}/${addr}`;
-  return `https://goerli.etherscan.io/${type}/${addr}`;
+  return `https://sepolia.etherscan.io/${type}/${addr}`;
 }
 
 export default function WorkflowModal({ workflow, onClose, chainId }: Props) {
@@ -92,6 +91,9 @@ export default function WorkflowModal({ workflow, onClose, chainId }: Props) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.92, y: 20 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Workflow #${workflow.id.toString()} details`}
           onClick={(e) => e.stopPropagation()}
           className="bg-dark-800 border border-slate-700 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl"
         >
@@ -111,7 +113,7 @@ export default function WorkflowModal({ workflow, onClose, chainId }: Props) {
                 {parseFloat(formatEther(workflow.amount)).toFixed(4)} ETH
               </div>
             </div>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-xl bg-dark-700 text-slate-400 hover:text-white hover:bg-dark-600 transition-all">
+            <button onClick={onClose} aria-label="Close" className="w-8 h-8 flex items-center justify-center rounded-xl bg-dark-700 text-slate-400 hover:text-white hover:bg-dark-600 transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -229,7 +231,7 @@ export default function WorkflowModal({ workflow, onClose, chainId }: Props) {
           {/* Footer */}
           <div className="px-6 pb-6">
             <a
-              href={getExplorerUrl(chainId, `address/${workflow.user}`)}
+              href={getExplorerUrl(chainId, workflow.user)}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 w-full bg-dark-700 border border-slate-700 text-slate-400 hover:text-neon-cyan hover:border-neon-cyan/30 font-medium py-3 rounded-xl transition-all text-sm"

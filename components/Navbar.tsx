@@ -103,7 +103,7 @@ export default function Navbar() {
           {links.map((l) => {
             const active = pathname === l.href;
             return (
-              <Link key={l.href} href={l.href}>
+              <Link key={l.href} href={l.href} aria-current={active ? 'page' : undefined}>
                 <span className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
                   active
                     ? "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
@@ -129,6 +129,8 @@ export default function Navbar() {
           <button
             className="lg:hidden text-slate-400 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.05]"
             onClick={() => setOpen(!open)}
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
           >
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
@@ -149,7 +151,7 @@ export default function Navbar() {
               {links.map((l) => {
                 const active = pathname === l.href;
                 return (
-                  <Link key={l.href} href={l.href} onClick={() => setOpen(false)}>
+                  <Link key={l.href} href={l.href} onClick={() => setOpen(false)} aria-current={active ? 'page' : undefined}>
                     <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
                       active
                         ? "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
