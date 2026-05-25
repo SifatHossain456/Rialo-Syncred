@@ -19,6 +19,13 @@ import { type Workflow } from "@/lib/mockData";
 
 const DEPLOYED = isContractDeployed();
 
+function errMsg(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "shortMessage" in err && typeof (err as { shortMessage: unknown }).shortMessage === "string")
+    return (err as { shortMessage: string }).shortMessage;
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 export default function AdminPanel() {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
@@ -80,8 +87,8 @@ export default function AdminPanel() {
       setActionTxHash(hash);
       setLogs((p) => [{ id: id.toString(), action: "APPROVED", time: new Date().toLocaleTimeString() }, ...p.slice(0, 19)]);
       toast.success(`Approved #${id}!`, { id: toastId });
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Approve failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Approve failed"), { id: toastId });
     }
   }
 
@@ -95,8 +102,8 @@ export default function AdminPanel() {
       setLogs((p) => [{ id: id.toString(), action: "REJECTED", time: new Date().toLocaleTimeString() }, ...p.slice(0, 19)]);
       toast.success(`Rejected #${id}`, { id: toastId });
       setRejectId(null);
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Reject failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Reject failed"), { id: toastId });
     }
   }
 
@@ -108,8 +115,8 @@ export default function AdminPanel() {
       });
       setActionTxHash(hash);
       toast.success(`Verification started for #${id}`, { id: toastId });
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Failed"), { id: toastId });
     }
   }
 
@@ -122,8 +129,8 @@ export default function AdminPanel() {
       });
       setActionTxHash(hash);
       toast.success(`Deposited ${depositAmount} ETH to pool!`, { id: toastId });
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Deposit failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Deposit failed"), { id: toastId });
     }
   }
 

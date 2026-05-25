@@ -28,6 +28,13 @@ import { useEthPrice, fmtUsd } from "@/hooks/useEthPrice";
 
 const DEPLOYED = isContractDeployed();
 
+function errMsg(err: unknown, fallback: string): string {
+  if (err && typeof err === "object" && "shortMessage" in err && typeof (err as { shortMessage: unknown }).shortMessage === "string")
+    return (err as { shortMessage: string }).shortMessage;
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
 const STATE_CONFIG = {
   0: { label: "Pending",   icon: <Clock className="w-3 h-3" />,                        color: "text-amber-400",   bg: "bg-amber-400/10  border-amber-400/25"  },
   1: { label: "Verifying", icon: <Loader2 className="w-3 h-3 animate-spin" />,          color: "text-blue-400",    bg: "bg-blue-400/10   border-blue-400/25"   },
@@ -162,8 +169,8 @@ export default function Dashboard() {
       });
       setPendingTxHash(hash);
       toast.success("Transaction submitted!", { id: toastId });
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Transaction failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Transaction failed"), { id: toastId });
     }
   }
 
@@ -174,8 +181,8 @@ export default function Dashboard() {
       const hash = await writeContractAsync({ address: CONTRACT_ADDRESS, abi: ABI, functionName: "cancelWorkflow", args: [id] });
       setCancelTxHash(hash);
       toast.success("Cancel submitted!", { id: toastId });
-    } catch (err: any) {
-      toast.error(err?.shortMessage || "Failed", { id: toastId });
+    } catch (err: unknown) {
+      toast.error(errMsg(err, "Failed"), { id: toastId });
     }
   }
 
